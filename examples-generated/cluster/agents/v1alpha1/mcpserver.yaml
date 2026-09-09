@@ -1,0 +1,26 @@
+apiVersion: agents.coderd.crossplane.io/v1alpha1
+kind: MCPServer
+metadata:
+  annotations:
+    meta.upbound.io/example-id: agents/v1alpha1/mcpserver
+  labels:
+    testing.upbound.io/example-name: example
+  name: example
+spec:
+  forProvider:
+    apiKeyHeader: Authorization
+    apiKeyValueWoSecretRef:
+      key: example-key
+      name: example-secret
+      namespace: upbound-system
+    apiKeyValueWoVersion: 1
+    authType: api_key
+    availability: default_on
+    displayName: Internal Search
+    enabled: true
+    modelIntent: true
+    slug: internal-search
+    toolAllowList:
+    - search
+    - read_document
+    url: https://mcp.example.com/v1

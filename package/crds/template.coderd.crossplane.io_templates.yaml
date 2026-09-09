@@ -1,0 +1,1037 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
+  name: templates.template.coderd.crossplane.io
+spec:
+  group: template.coderd.crossplane.io
+  names:
+    categories:
+    - crossplane
+    - managed
+    - coderd
+    kind: Template
+    listKind: TemplateList
+    plural: templates
+    singular: template
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=='Synced')].status
+      name: SYNCED
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='Ready')].status
+      name: READY
+      type: string
+    - jsonPath: .metadata.annotations.crossplane\.io/external-name
+      name: EXTERNAL-NAME
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Template is the Schema for the Templates API. A Coder template.
+          Logs from building template versions can be optionally streamed from the
+          provisioner by setting the TF_LOG environment variable to INFO or higher.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: TemplateSpec defines the desired state of Template
+            properties:
+              deletionPolicy:
+                default: Delete
+                description: |-
+                  DeletionPolicy specifies what will happen to the underlying external
+                  when this managed resource is deleted - either "Delete" or "Orphan" the
+                  external resource.
+                  This field is planned to be deprecated in favor of the ManagementPolicies
+                  field in a future release. Currently, both could be set independently and
+                  non-default values would be honored if the feature flag is enabled.
+                  See the design doc for more information: https://github.com/crossplane/crossplane/blob/499895a25d1a1a0ba1604944ef98ac7a1a71f197/design/design-doc-observe-only-resources.md?plain=1#L223
+                enum:
+                - Orphan
+                - Delete
+                type: string
+              forProvider:
+                properties:
+                  acl:
+                    description: (Attributes) (Enterprise) Access control list for
+                      the template. (see below for nested schema)
+                    properties:
+                      groups:
+                        description: (Attributes Set) (see below for nested schema)
+                        items:
+                          properties:
+                            id:
+                              description: (String) The ID of the template.
+                              type: string
+                            role:
+                              description: |-
+                                (String) Role assigned to the user or group. Valid roles are admin and use.
+                                Role assigned to the user or group. Valid roles are `admin` and `use`.
+                              type: string
+                          type: object
+                        type: array
+                      users:
+                        description: (Attributes Set) (see below for nested schema)
+                        items:
+                          properties:
+                            id:
+                              description: (String) The ID of the template.
+                              type: string
+                            role:
+                              description: |-
+                                (String) Role assigned to the user or group. Valid roles are admin and use.
+                                Role assigned to the user or group. Valid roles are `admin` and `use`.
+                              type: string
+                          type: object
+                        type: array
+                    type: object
+                  activityBumpMs:
+                    description: |-
+                      (Number) The activity bump duration for all workspaces created from this template, in milliseconds. Defaults to one hour.
+                      The activity bump duration for all workspaces created from this template, in milliseconds. Defaults to one hour.
+                    type: number
+                  agentsAllowed:
+                    description: |-
+                      (Boolean) Whether Coder Agents can create workspaces from this template. Coder defaults this setting to true. Requires a Coder deployment running v2.37.0 or later.
+                      Whether Coder Agents can create workspaces from this template. Coder defaults this setting to true. Requires a Coder deployment running v2.37.0 or later.
+                    type: boolean
+                  allowUserAutoStart:
+                    description: |-
+                      start workspaces created from this template. Defaults to true.
+                      (Enterprise) Whether users can auto-start workspaces created from this template. Defaults to true.
+                    type: boolean
+                  allowUserAutoStop:
+                    description: |-
+                      stop workspaces created from this template. Defaults to true.
+                      (Enterprise) Whether users can auto-stop workspaces created from this template. Defaults to true.
+                    type: boolean
+                  allowUserCancelWorkspaceJobs:
+                    description: |-
+                      progress workspace jobs using this template. Defaults to true.
+                      Whether users can cancel in-progress workspace jobs using this template. Defaults to true.
+                    type: boolean
+                  autoStartPermittedDaysOfWeek:
+                    description: |-
+                      (Set of String) (Enterprise) List of days of the week in which autostart is allowed to happen, for all workspaces created from this template. Defaults to all days. If no days are specified, autostart is not allowed.
+                      (Enterprise) List of days of the week in which autostart is allowed to happen, for all workspaces created from this template. Defaults to all days. If no days are specified, autostart is not allowed.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  autoStopRequirement:
+                    description: stop requirement for all workspaces created from
+                      this template. (see below for nested schema)
+                    properties:
+                      daysOfWeek:
+                        description: |-
+                          (Set of String) List of days of the week on which restarts are required. Restarts happen within the user's quiet hours (in their configured timezone). If no days are specified, restarts are not required.
+                          List of days of the week on which restarts are required. Restarts happen within the user's quiet hours (in their configured timezone). If no days are specified, restarts are not required.
+                        items:
+                          type: string
+                        type: array
+                        x-kubernetes-list-type: set
+                      weeks:
+                        description: |-
+                          (Number) Weeks is the number of weeks between required restarts. Weeks are synced across all workspaces (and Coder deployments) using modulo math on a hardcoded epoch week of January 2nd, 2023 (the first Monday of 2023). Values of 0 or 1 indicate weekly restarts. Values of 2 indicate fortnightly restarts, etc.
+                          Weeks is the number of weeks between required restarts. Weeks are synced across all workspaces (and Coder deployments) using modulo math on a hardcoded epoch week of January 2nd, 2023 (the first Monday of 2023). Values of 0 or 1 indicate weekly restarts. Values of 2 indicate fortnightly restarts, etc.
+                        type: number
+                    type: object
+                  corsBehavior:
+                    description: |-
+                      (String) The CORS behavior for workspace apps in this template. Valid values are simple (default CORS middleware) or passthru (bypass CORS middleware). Defaults to simple. Requires a Coder deployment running v2.26.0 or later.
+                      The CORS behavior for workspace apps in this template. Valid values are `simple` (default CORS middleware) or `passthru` (bypass CORS middleware). Defaults to `simple`. Requires a Coder deployment running v2.26.0 or later.
+                    type: string
+                  defaultTtlMs:
+                    description: |-
+                      to-live for all workspaces created from this template, in milliseconds.
+                      The default time-to-live for all workspaces created from this template, in milliseconds.
+                    type: number
+                  deprecationMessage:
+                    description: |-
+                      (String) If set, the template will be marked as deprecated with the provided message and users will be blocked from creating new workspaces from it. Does nothing if set when the resource is created.
+                      If set, the template will be marked as deprecated with the provided message and users will be blocked from creating new workspaces from it. Does nothing if set when the resource is created.
+                    type: string
+                  description:
+                    description: |-
+                      (String) A description of the template.
+                      A description of the template.
+                    type: string
+                  displayName:
+                    description: |-
+                      (String) The display name of the template. Defaults to the template name.
+                      The display name of the template. Defaults to the template name.
+                    type: string
+                  failureTtlMs:
+                    description: |-
+                      (Number) (Enterprise) The max lifetime before Coder stops all resources for failed workspaces created from this template, in milliseconds.
+                      (Enterprise) The max lifetime before Coder stops all resources for failed workspaces created from this template, in milliseconds.
+                    type: number
+                  icon:
+                    description: |-
+                      (String) Relative path or external URL that specifies an icon to be displayed in the dashboard.
+                      Relative path or external URL that specifies an icon to be displayed in the dashboard.
+                    type: string
+                  maxPortShareLevel:
+                    description: |-
+                      (String) (Enterprise) The maximum port share level for workspaces created from this template. Defaults to owner on an Enterprise deployment, or public otherwise.
+                      (Enterprise) The maximum port share level for workspaces created from this template. Defaults to `owner` on an Enterprise deployment, or `public` otherwise.
+                    type: string
+                  name:
+                    description: |-
+                      (String) The name of the template.
+                      The name of the template.
+                    type: string
+                  organizationId:
+                    description: |-
+                      (String) The ID of the organization. Defaults to the provider's default organization
+                      The ID of the organization. Defaults to the provider's default organization
+                    type: string
+                  organizationIdRef:
+                    description: Reference to a Organization in iam to populate organizationId.
+                    properties:
+                      name:
+                        description: Name of the referenced object.
+                        type: string
+                      policy:
+                        description: Policies for referencing.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    required:
+                    - name
+                    type: object
+                  organizationIdSelector:
+                    description: Selector for a Organization in iam to populate organizationId.
+                    properties:
+                      matchControllerRef:
+                        description: |-
+                          MatchControllerRef ensures an object with the same controller reference
+                          as the selecting object is selected.
+                        type: boolean
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: MatchLabels ensures an object with matching labels
+                          is selected.
+                        type: object
+                      policy:
+                        description: Policies for selection.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    type: object
+                  requireActiveVersion:
+                    description: |-
+                      (Boolean) (Enterprise) Whether workspaces must be created from the active version of this template. Defaults to false.
+                      (Enterprise) Whether workspaces must be created from the active version of this template. Defaults to false.
+                    type: boolean
+                  timeTilDormantAutodeleteMs:
+                    description: |-
+                      (Number) (Enterprise) The max lifetime before Coder permanently deletes dormant workspaces created from this template.
+                      (Enterprise) The max lifetime before Coder permanently deletes dormant workspaces created from this template.
+                    type: number
+                  timeTilDormantMs:
+                    description: |-
+                      (Number) (Enterprise) The max lifetime before Coder locks inactive workspaces created from this template, in milliseconds.
+                      (Enterprise) The max lifetime before Coder locks inactive workspaces created from this template, in milliseconds.
+                    type: number
+                  useClassicParameterFlow:
+                    description: |-
+                      (Boolean) If true, the classic parameter flow will be used when creating workspaces from this template. Defaults to false.
+                      If true, the classic parameter flow will be used when creating workspaces from this template. Defaults to false.
+                    type: boolean
+                  versions:
+                    description: (Attributes List) The template versions to manage.
+                      At least one version (with active = true) is required when creating
+                      a new template, since Coder templates cannot exist without a
+                      version. (see below for nested schema)
+                    items:
+                      properties:
+                        active:
+                          description: |-
+                            (Boolean) Whether this version is the active version of the template. Only one version can be active at a time.
+                            Whether this version is the active version of the template. Only one version can be active at a time.
+                          type: boolean
+                        directory:
+                          description: |-
+                            (String) A path to the directory to create the template version from. Changes in the directory contents will trigger the creation of a new template version.
+                            A path to the directory to create the template version from. Changes in the directory contents will trigger the creation of a new template version.
+                          type: string
+                        message:
+                          description: |-
+                            (String) A message describing the changes in this version of the template. Messages longer than 72 characters will be truncated.
+                            A message describing the changes in this version of the template. Messages longer than 72 characters will be truncated.
+                          type: string
+                        name:
+                          description: |-
+                            (String) The name of the template.
+                            The name of the template version. Automatically generated if not provided. If provided, the name *must* change each time the directory contents, or the `tf_vars` attribute are updated.
+                          type: string
+                        provisionerTags:
+                          description: (Attributes Set) Provisioner tags for the template
+                            version. (see below for nested schema)
+                          items:
+                            properties:
+                              name:
+                                description: (String) The name of the template.
+                                type: string
+                              value:
+                                description: (String)
+                                type: string
+                            type: object
+                          type: array
+                        tfVars:
+                          description: (see below for nested schema)
+                          items:
+                            properties:
+                              name:
+                                description: (String) The name of the template.
+                                type: string
+                              value:
+                                description: (String)
+                                type: string
+                            type: object
+                          type: array
+                      type: object
+                    type: array
+                type: object
+              initProvider:
+                description: |-
+                  THIS IS A BETA FIELD. It will be honored
+                  unless the Management Policies feature flag is disabled.
+                  InitProvider holds the same fields as ForProvider, with the exception
+                  of Identifier and other resource reference fields. The fields that are
+                  in InitProvider are merged into ForProvider when the resource is created.
+                  The same fields are also added to the terraform ignore_changes hook, to
+                  avoid updating them after creation. This is useful for fields that are
+                  required on creation, but we do not desire to update them after creation,
+                  for example because of an external controller is managing them, like an
+                  autoscaler.
+                properties:
+                  acl:
+                    description: (Attributes) (Enterprise) Access control list for
+                      the template. (see below for nested schema)
+                    properties:
+                      groups:
+                        description: (Attributes Set) (see below for nested schema)
+                        items:
+                          properties:
+                            id:
+                              description: (String) The ID of the template.
+                              type: string
+                            role:
+                              description: |-
+                                (String) Role assigned to the user or group. Valid roles are admin and use.
+                                Role assigned to the user or group. Valid roles are `admin` and `use`.
+                              type: string
+                          type: object
+                        type: array
+                      users:
+                        description: (Attributes Set) (see below for nested schema)
+                        items:
+                          properties:
+                            id:
+                              description: (String) The ID of the template.
+                              type: string
+                            role:
+                              description: |-
+                                (String) Role assigned to the user or group. Valid roles are admin and use.
+                                Role assigned to the user or group. Valid roles are `admin` and `use`.
+                              type: string
+                          type: object
+                        type: array
+                    type: object
+                  activityBumpMs:
+                    description: |-
+                      (Number) The activity bump duration for all workspaces created from this template, in milliseconds. Defaults to one hour.
+                      The activity bump duration for all workspaces created from this template, in milliseconds. Defaults to one hour.
+                    type: number
+                  agentsAllowed:
+                    description: |-
+                      (Boolean) Whether Coder Agents can create workspaces from this template. Coder defaults this setting to true. Requires a Coder deployment running v2.37.0 or later.
+                      Whether Coder Agents can create workspaces from this template. Coder defaults this setting to true. Requires a Coder deployment running v2.37.0 or later.
+                    type: boolean
+                  allowUserAutoStart:
+                    description: |-
+                      start workspaces created from this template. Defaults to true.
+                      (Enterprise) Whether users can auto-start workspaces created from this template. Defaults to true.
+                    type: boolean
+                  allowUserAutoStop:
+                    description: |-
+                      stop workspaces created from this template. Defaults to true.
+                      (Enterprise) Whether users can auto-stop workspaces created from this template. Defaults to true.
+                    type: boolean
+                  allowUserCancelWorkspaceJobs:
+                    description: |-
+                      progress workspace jobs using this template. Defaults to true.
+                      Whether users can cancel in-progress workspace jobs using this template. Defaults to true.
+                    type: boolean
+                  autoStartPermittedDaysOfWeek:
+                    description: |-
+                      (Set of String) (Enterprise) List of days of the week in which autostart is allowed to happen, for all workspaces created from this template. Defaults to all days. If no days are specified, autostart is not allowed.
+                      (Enterprise) List of days of the week in which autostart is allowed to happen, for all workspaces created from this template. Defaults to all days. If no days are specified, autostart is not allowed.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  autoStopRequirement:
+                    description: stop requirement for all workspaces created from
+                      this template. (see below for nested schema)
+                    properties:
+                      daysOfWeek:
+                        description: |-
+                          (Set of String) List of days of the week on which restarts are required. Restarts happen within the user's quiet hours (in their configured timezone). If no days are specified, restarts are not required.
+                          List of days of the week on which restarts are required. Restarts happen within the user's quiet hours (in their configured timezone). If no days are specified, restarts are not required.
+                        items:
+                          type: string
+                        type: array
+                        x-kubernetes-list-type: set
+                      weeks:
+                        description: |-
+                          (Number) Weeks is the number of weeks between required restarts. Weeks are synced across all workspaces (and Coder deployments) using modulo math on a hardcoded epoch week of January 2nd, 2023 (the first Monday of 2023). Values of 0 or 1 indicate weekly restarts. Values of 2 indicate fortnightly restarts, etc.
+                          Weeks is the number of weeks between required restarts. Weeks are synced across all workspaces (and Coder deployments) using modulo math on a hardcoded epoch week of January 2nd, 2023 (the first Monday of 2023). Values of 0 or 1 indicate weekly restarts. Values of 2 indicate fortnightly restarts, etc.
+                        type: number
+                    type: object
+                  corsBehavior:
+                    description: |-
+                      (String) The CORS behavior for workspace apps in this template. Valid values are simple (default CORS middleware) or passthru (bypass CORS middleware). Defaults to simple. Requires a Coder deployment running v2.26.0 or later.
+                      The CORS behavior for workspace apps in this template. Valid values are `simple` (default CORS middleware) or `passthru` (bypass CORS middleware). Defaults to `simple`. Requires a Coder deployment running v2.26.0 or later.
+                    type: string
+                  defaultTtlMs:
+                    description: |-
+                      to-live for all workspaces created from this template, in milliseconds.
+                      The default time-to-live for all workspaces created from this template, in milliseconds.
+                    type: number
+                  deprecationMessage:
+                    description: |-
+                      (String) If set, the template will be marked as deprecated with the provided message and users will be blocked from creating new workspaces from it. Does nothing if set when the resource is created.
+                      If set, the template will be marked as deprecated with the provided message and users will be blocked from creating new workspaces from it. Does nothing if set when the resource is created.
+                    type: string
+                  description:
+                    description: |-
+                      (String) A description of the template.
+                      A description of the template.
+                    type: string
+                  displayName:
+                    description: |-
+                      (String) The display name of the template. Defaults to the template name.
+                      The display name of the template. Defaults to the template name.
+                    type: string
+                  failureTtlMs:
+                    description: |-
+                      (Number) (Enterprise) The max lifetime before Coder stops all resources for failed workspaces created from this template, in milliseconds.
+                      (Enterprise) The max lifetime before Coder stops all resources for failed workspaces created from this template, in milliseconds.
+                    type: number
+                  icon:
+                    description: |-
+                      (String) Relative path or external URL that specifies an icon to be displayed in the dashboard.
+                      Relative path or external URL that specifies an icon to be displayed in the dashboard.
+                    type: string
+                  maxPortShareLevel:
+                    description: |-
+                      (String) (Enterprise) The maximum port share level for workspaces created from this template. Defaults to owner on an Enterprise deployment, or public otherwise.
+                      (Enterprise) The maximum port share level for workspaces created from this template. Defaults to `owner` on an Enterprise deployment, or `public` otherwise.
+                    type: string
+                  name:
+                    description: |-
+                      (String) The name of the template.
+                      The name of the template.
+                    type: string
+                  organizationId:
+                    description: |-
+                      (String) The ID of the organization. Defaults to the provider's default organization
+                      The ID of the organization. Defaults to the provider's default organization
+                    type: string
+                  organizationIdRef:
+                    description: Reference to a Organization in iam to populate organizationId.
+                    properties:
+                      name:
+                        description: Name of the referenced object.
+                        type: string
+                      policy:
+                        description: Policies for referencing.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    required:
+                    - name
+                    type: object
+                  organizationIdSelector:
+                    description: Selector for a Organization in iam to populate organizationId.
+                    properties:
+                      matchControllerRef:
+                        description: |-
+                          MatchControllerRef ensures an object with the same controller reference
+                          as the selecting object is selected.
+                        type: boolean
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: MatchLabels ensures an object with matching labels
+                          is selected.
+                        type: object
+                      policy:
+                        description: Policies for selection.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    type: object
+                  requireActiveVersion:
+                    description: |-
+                      (Boolean) (Enterprise) Whether workspaces must be created from the active version of this template. Defaults to false.
+                      (Enterprise) Whether workspaces must be created from the active version of this template. Defaults to false.
+                    type: boolean
+                  timeTilDormantAutodeleteMs:
+                    description: |-
+                      (Number) (Enterprise) The max lifetime before Coder permanently deletes dormant workspaces created from this template.
+                      (Enterprise) The max lifetime before Coder permanently deletes dormant workspaces created from this template.
+                    type: number
+                  timeTilDormantMs:
+                    description: |-
+                      (Number) (Enterprise) The max lifetime before Coder locks inactive workspaces created from this template, in milliseconds.
+                      (Enterprise) The max lifetime before Coder locks inactive workspaces created from this template, in milliseconds.
+                    type: number
+                  useClassicParameterFlow:
+                    description: |-
+                      (Boolean) If true, the classic parameter flow will be used when creating workspaces from this template. Defaults to false.
+                      If true, the classic parameter flow will be used when creating workspaces from this template. Defaults to false.
+                    type: boolean
+                  versions:
+                    description: (Attributes List) The template versions to manage.
+                      At least one version (with active = true) is required when creating
+                      a new template, since Coder templates cannot exist without a
+                      version. (see below for nested schema)
+                    items:
+                      properties:
+                        active:
+                          description: |-
+                            (Boolean) Whether this version is the active version of the template. Only one version can be active at a time.
+                            Whether this version is the active version of the template. Only one version can be active at a time.
+                          type: boolean
+                        directory:
+                          description: |-
+                            (String) A path to the directory to create the template version from. Changes in the directory contents will trigger the creation of a new template version.
+                            A path to the directory to create the template version from. Changes in the directory contents will trigger the creation of a new template version.
+                          type: string
+                        message:
+                          description: |-
+                            (String) A message describing the changes in this version of the template. Messages longer than 72 characters will be truncated.
+                            A message describing the changes in this version of the template. Messages longer than 72 characters will be truncated.
+                          type: string
+                        name:
+                          description: |-
+                            (String) The name of the template.
+                            The name of the template version. Automatically generated if not provided. If provided, the name *must* change each time the directory contents, or the `tf_vars` attribute are updated.
+                          type: string
+                        provisionerTags:
+                          description: (Attributes Set) Provisioner tags for the template
+                            version. (see below for nested schema)
+                          items:
+                            properties:
+                              name:
+                                description: (String) The name of the template.
+                                type: string
+                              value:
+                                description: (String)
+                                type: string
+                            type: object
+                          type: array
+                        tfVars:
+                          description: (see below for nested schema)
+                          items:
+                            properties:
+                              name:
+                                description: (String) The name of the template.
+                                type: string
+                              value:
+                                description: (String)
+                                type: string
+                            type: object
+                          type: array
+                      type: object
+                    type: array
+                type: object
+              managementPolicies:
+                default:
+                - '*'
+                description: |-
+                  THIS IS A BETA FIELD. It is on by default but can be opted out
+                  through a Crossplane feature flag.
+                  ManagementPolicies specify the array of actions Crossplane is allowed to
+                  take on the managed and external resources.
+                  This field is planned to replace the DeletionPolicy field in a future
+                  release. Currently, both could be set independently and non-default
+                  values would be honored if the feature flag is enabled. If both are
+                  custom, the DeletionPolicy field will be ignored.
+                  See the design doc for more information: https://github.com/crossplane/crossplane/blob/499895a25d1a1a0ba1604944ef98ac7a1a71f197/design/design-doc-observe-only-resources.md?plain=1#L223
+                  and this one: https://github.com/crossplane/crossplane/blob/444267e84783136daa93568b364a5f01228cacbe/design/one-pager-ignore-changes.md
+                items:
+                  description: |-
+                    A ManagementAction represents an action that the Crossplane controllers
+                    can take on an external resource.
+                  enum:
+                  - Observe
+                  - Create
+                  - Update
+                  - Delete
+                  - LateInitialize
+                  - '*'
+                  type: string
+                type: array
+              providerConfigRef:
+                default:
+                  name: default
+                description: |-
+                  ProviderConfigReference specifies how the provider that will be used to
+                  create, observe, update, and delete this managed resource should be
+                  configured.
+                properties:
+                  name:
+                    description: Name of the referenced object.
+                    type: string
+                  policy:
+                    description: Policies for referencing.
+                    properties:
+                      resolution:
+                        default: Required
+                        description: |-
+                          Resolution specifies whether resolution of this reference is required.
+                          The default is 'Required', which means the reconcile will fail if the
+                          reference cannot be resolved. 'Optional' means this reference will be
+                          a no-op if it cannot be resolved.
+                        enum:
+                        - Required
+                        - Optional
+                        type: string
+                      resolve:
+                        description: |-
+                          Resolve specifies when this reference should be resolved. The default
+                          is 'IfNotPresent', which will attempt to resolve the reference only when
+                          the corresponding field is not present. Use 'Always' to resolve the
+                          reference on every reconcile.
+                        enum:
+                        - Always
+                        - IfNotPresent
+                        type: string
+                    type: object
+                required:
+                - name
+                type: object
+              writeConnectionSecretToRef:
+                description: |-
+                  WriteConnectionSecretToReference specifies the namespace and name of a
+                  Secret to which any connection details for this managed resource should
+                  be written. Connection details frequently include the endpoint, username,
+                  and password required to connect to the managed resource.
+                properties:
+                  name:
+                    description: Name of the secret.
+                    type: string
+                  namespace:
+                    description: Namespace of the secret.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+            required:
+            - forProvider
+            type: object
+            x-kubernetes-validations:
+            - message: spec.forProvider.name is a required parameter
+              rule: '!(''*'' in self.managementPolicies || ''Create'' in self.managementPolicies
+                || ''Update'' in self.managementPolicies) || has(self.forProvider.name)
+                || (has(self.initProvider) && has(self.initProvider.name))'
+          status:
+            description: TemplateStatus defines the observed state of Template.
+            properties:
+              atProvider:
+                properties:
+                  acl:
+                    description: (Attributes) (Enterprise) Access control list for
+                      the template. (see below for nested schema)
+                    properties:
+                      groups:
+                        description: (Attributes Set) (see below for nested schema)
+                        items:
+                          properties:
+                            id:
+                              description: (String) The ID of the template.
+                              type: string
+                            role:
+                              description: |-
+                                (String) Role assigned to the user or group. Valid roles are admin and use.
+                                Role assigned to the user or group. Valid roles are `admin` and `use`.
+                              type: string
+                          type: object
+                        type: array
+                      users:
+                        description: (Attributes Set) (see below for nested schema)
+                        items:
+                          properties:
+                            id:
+                              description: (String) The ID of the template.
+                              type: string
+                            role:
+                              description: |-
+                                (String) Role assigned to the user or group. Valid roles are admin and use.
+                                Role assigned to the user or group. Valid roles are `admin` and `use`.
+                              type: string
+                          type: object
+                        type: array
+                    type: object
+                  activityBumpMs:
+                    description: |-
+                      (Number) The activity bump duration for all workspaces created from this template, in milliseconds. Defaults to one hour.
+                      The activity bump duration for all workspaces created from this template, in milliseconds. Defaults to one hour.
+                    type: number
+                  agentsAllowed:
+                    description: |-
+                      (Boolean) Whether Coder Agents can create workspaces from this template. Coder defaults this setting to true. Requires a Coder deployment running v2.37.0 or later.
+                      Whether Coder Agents can create workspaces from this template. Coder defaults this setting to true. Requires a Coder deployment running v2.37.0 or later.
+                    type: boolean
+                  allowUserAutoStart:
+                    description: |-
+                      start workspaces created from this template. Defaults to true.
+                      (Enterprise) Whether users can auto-start workspaces created from this template. Defaults to true.
+                    type: boolean
+                  allowUserAutoStop:
+                    description: |-
+                      stop workspaces created from this template. Defaults to true.
+                      (Enterprise) Whether users can auto-stop workspaces created from this template. Defaults to true.
+                    type: boolean
+                  allowUserCancelWorkspaceJobs:
+                    description: |-
+                      progress workspace jobs using this template. Defaults to true.
+                      Whether users can cancel in-progress workspace jobs using this template. Defaults to true.
+                    type: boolean
+                  autoStartPermittedDaysOfWeek:
+                    description: |-
+                      (Set of String) (Enterprise) List of days of the week in which autostart is allowed to happen, for all workspaces created from this template. Defaults to all days. If no days are specified, autostart is not allowed.
+                      (Enterprise) List of days of the week in which autostart is allowed to happen, for all workspaces created from this template. Defaults to all days. If no days are specified, autostart is not allowed.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  autoStopRequirement:
+                    description: stop requirement for all workspaces created from
+                      this template. (see below for nested schema)
+                    properties:
+                      daysOfWeek:
+                        description: |-
+                          (Set of String) List of days of the week on which restarts are required. Restarts happen within the user's quiet hours (in their configured timezone). If no days are specified, restarts are not required.
+                          List of days of the week on which restarts are required. Restarts happen within the user's quiet hours (in their configured timezone). If no days are specified, restarts are not required.
+                        items:
+                          type: string
+                        type: array
+                        x-kubernetes-list-type: set
+                      weeks:
+                        description: |-
+                          (Number) Weeks is the number of weeks between required restarts. Weeks are synced across all workspaces (and Coder deployments) using modulo math on a hardcoded epoch week of January 2nd, 2023 (the first Monday of 2023). Values of 0 or 1 indicate weekly restarts. Values of 2 indicate fortnightly restarts, etc.
+                          Weeks is the number of weeks between required restarts. Weeks are synced across all workspaces (and Coder deployments) using modulo math on a hardcoded epoch week of January 2nd, 2023 (the first Monday of 2023). Values of 0 or 1 indicate weekly restarts. Values of 2 indicate fortnightly restarts, etc.
+                        type: number
+                    type: object
+                  corsBehavior:
+                    description: |-
+                      (String) The CORS behavior for workspace apps in this template. Valid values are simple (default CORS middleware) or passthru (bypass CORS middleware). Defaults to simple. Requires a Coder deployment running v2.26.0 or later.
+                      The CORS behavior for workspace apps in this template. Valid values are `simple` (default CORS middleware) or `passthru` (bypass CORS middleware). Defaults to `simple`. Requires a Coder deployment running v2.26.0 or later.
+                    type: string
+                  defaultTtlMs:
+                    description: |-
+                      to-live for all workspaces created from this template, in milliseconds.
+                      The default time-to-live for all workspaces created from this template, in milliseconds.
+                    type: number
+                  deprecationMessage:
+                    description: |-
+                      (String) If set, the template will be marked as deprecated with the provided message and users will be blocked from creating new workspaces from it. Does nothing if set when the resource is created.
+                      If set, the template will be marked as deprecated with the provided message and users will be blocked from creating new workspaces from it. Does nothing if set when the resource is created.
+                    type: string
+                  description:
+                    description: |-
+                      (String) A description of the template.
+                      A description of the template.
+                    type: string
+                  displayName:
+                    description: |-
+                      (String) The display name of the template. Defaults to the template name.
+                      The display name of the template. Defaults to the template name.
+                    type: string
+                  failureTtlMs:
+                    description: |-
+                      (Number) (Enterprise) The max lifetime before Coder stops all resources for failed workspaces created from this template, in milliseconds.
+                      (Enterprise) The max lifetime before Coder stops all resources for failed workspaces created from this template, in milliseconds.
+                    type: number
+                  icon:
+                    description: |-
+                      (String) Relative path or external URL that specifies an icon to be displayed in the dashboard.
+                      Relative path or external URL that specifies an icon to be displayed in the dashboard.
+                    type: string
+                  id:
+                    description: (String) The ID of the template.
+                    type: string
+                  maxPortShareLevel:
+                    description: |-
+                      (String) (Enterprise) The maximum port share level for workspaces created from this template. Defaults to owner on an Enterprise deployment, or public otherwise.
+                      (Enterprise) The maximum port share level for workspaces created from this template. Defaults to `owner` on an Enterprise deployment, or `public` otherwise.
+                    type: string
+                  name:
+                    description: |-
+                      (String) The name of the template.
+                      The name of the template.
+                    type: string
+                  organizationId:
+                    description: |-
+                      (String) The ID of the organization. Defaults to the provider's default organization
+                      The ID of the organization. Defaults to the provider's default organization
+                    type: string
+                  requireActiveVersion:
+                    description: |-
+                      (Boolean) (Enterprise) Whether workspaces must be created from the active version of this template. Defaults to false.
+                      (Enterprise) Whether workspaces must be created from the active version of this template. Defaults to false.
+                    type: boolean
+                  timeTilDormantAutodeleteMs:
+                    description: |-
+                      (Number) (Enterprise) The max lifetime before Coder permanently deletes dormant workspaces created from this template.
+                      (Enterprise) The max lifetime before Coder permanently deletes dormant workspaces created from this template.
+                    type: number
+                  timeTilDormantMs:
+                    description: |-
+                      (Number) (Enterprise) The max lifetime before Coder locks inactive workspaces created from this template, in milliseconds.
+                      (Enterprise) The max lifetime before Coder locks inactive workspaces created from this template, in milliseconds.
+                    type: number
+                  useClassicParameterFlow:
+                    description: |-
+                      (Boolean) If true, the classic parameter flow will be used when creating workspaces from this template. Defaults to false.
+                      If true, the classic parameter flow will be used when creating workspaces from this template. Defaults to false.
+                    type: boolean
+                  versions:
+                    description: (Attributes List) The template versions to manage.
+                      At least one version (with active = true) is required when creating
+                      a new template, since Coder templates cannot exist without a
+                      version. (see below for nested schema)
+                    items:
+                      properties:
+                        active:
+                          description: |-
+                            (Boolean) Whether this version is the active version of the template. Only one version can be active at a time.
+                            Whether this version is the active version of the template. Only one version can be active at a time.
+                          type: boolean
+                        directory:
+                          description: |-
+                            (String) A path to the directory to create the template version from. Changes in the directory contents will trigger the creation of a new template version.
+                            A path to the directory to create the template version from. Changes in the directory contents will trigger the creation of a new template version.
+                          type: string
+                        directoryHash:
+                          description: (String)
+                          type: string
+                        id:
+                          description: (String) The ID of the template.
+                          type: string
+                        message:
+                          description: |-
+                            (String) A message describing the changes in this version of the template. Messages longer than 72 characters will be truncated.
+                            A message describing the changes in this version of the template. Messages longer than 72 characters will be truncated.
+                          type: string
+                        name:
+                          description: |-
+                            (String) The name of the template.
+                            The name of the template version. Automatically generated if not provided. If provided, the name *must* change each time the directory contents, or the `tf_vars` attribute are updated.
+                          type: string
+                        provisionerTags:
+                          description: (Attributes Set) Provisioner tags for the template
+                            version. (see below for nested schema)
+                          items:
+                            properties:
+                              name:
+                                description: (String) The name of the template.
+                                type: string
+                              value:
+                                description: (String)
+                                type: string
+                            type: object
+                          type: array
+                        tfVars:
+                          description: (see below for nested schema)
+                          items:
+                            properties:
+                              name:
+                                description: (String) The name of the template.
+                                type: string
+                              value:
+                                description: (String)
+                                type: string
+                            type: object
+                          type: array
+                      type: object
+                    type: array
+                type: object
+              conditions:
+                description: Conditions of the resource.
+                items:
+                  description: A Condition that may apply to a resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        LastTransitionTime is the last time this condition transitioned from one
+                        status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        A Message containing details about this condition's last transition from
+                        one status to another, if any.
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        ObservedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      type: integer
+                    reason:
+                      description: A Reason for this condition's last transition from
+                        one status to another.
+                      type: string
+                    status:
+                      description: Status of this condition; is it currently True,
+                        False, or Unknown?
+                      type: string
+                    type:
+                      description: |-
+                        Type of this condition. At most one of each condition type may apply to
+                        a resource at any point in time.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              lastHandledReconcileAt:
+                description: |-
+                  LastHandledReconcileAt holds the value of the most recent
+                  reconcile-requested-at annotation token that the controller has
+                  processed. Users can compare this to the annotation to determine
+                  whether a reconcile request has been handled.
+                type: string
+              observedGeneration:
+                description: |-
+                  ObservedGeneration is the latest metadata.generation
+                  which resulted in either a ready state, or stalled due to error
+                  it can not recover from without human intervention.
+                format: int64
+                type: integer
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

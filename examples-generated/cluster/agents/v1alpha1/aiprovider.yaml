@@ -1,0 +1,19 @@
+apiVersion: agents.coderd.crossplane.io/v1alpha1
+kind: AIProvider
+metadata:
+  annotations:
+    meta.upbound.io/example-id: agents/v1alpha1/aiprovider
+  labels:
+    testing.upbound.io/example-name: bedrock
+  name: bedrock
+spec:
+  forProvider:
+    baseUrl: https://bedrock-runtime.us-east-1.amazonaws.com
+    displayName: AWS Bedrock
+    enabled: true
+    name: aws-bedrock
+    settings:
+      bedrock:
+        model: anthropic.claude-3-5-sonnet-20241022-v2:0
+        smallFastModel: anthropic.claude-3-5-haiku-20241022-v1:0
+    type: bedrock

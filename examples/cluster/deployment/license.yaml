@@ -1,0 +1,14 @@
+apiVersion: deployment.coderd.crossplane.io/v1alpha1
+kind: License
+metadata:
+  annotations:
+    meta.upbound.io/example-id: deployment/v1alpha1/license
+  labels:
+    testing.upbound.io/example-name: license
+  name: license
+spec:
+  forProvider:
+    licenseSecretRef:
+      key: example-key
+      name: example-secret
+      namespace: upbound-system

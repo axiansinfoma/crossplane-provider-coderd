@@ -1,0 +1,46 @@
+apiVersion: iam.coderd.crossplane.io/v1alpha1
+kind: Group
+metadata:
+  annotations:
+    meta.upbound.io/example-id: iam/v1alpha1/group
+  labels:
+    testing.upbound.io/example-name: group1
+  name: group1
+spec:
+  forProvider:
+    membersRefs:
+    - name: coder1
+    - name: coder2
+    name: group1
+
+---
+
+apiVersion: iam.coderd.crossplane.io/v1alpha1
+kind: User
+metadata:
+  annotations:
+    meta.upbound.io/example-id: iam/v1alpha1/group
+  labels:
+    testing.upbound.io/example-name: coder1
+  name: coder1
+spec:
+  forProvider:
+    email: coder1@coder.com
+    name: Coder One
+    username: coder1
+
+---
+
+apiVersion: iam.coderd.crossplane.io/v1alpha1
+kind: User
+metadata:
+  annotations:
+    meta.upbound.io/example-id: iam/v1alpha1/group
+  labels:
+    testing.upbound.io/example-name: coder2
+  name: coder2
+spec:
+  forProvider:
+    email: coder2@coder.com
+    name: Coder One
+    username: coder2

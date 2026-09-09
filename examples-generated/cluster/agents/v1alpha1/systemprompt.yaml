@@ -1,0 +1,12 @@
+apiVersion: agents.coderd.crossplane.io/v1alpha1
+kind: SystemPrompt
+metadata:
+  annotations:
+    meta.upbound.io/example-id: agents/v1alpha1/systemprompt
+  labels:
+    testing.upbound.io/example-name: this
+  name: this
+spec:
+  forProvider:
+    includeDefaultSystemPrompt: true
+    systemPrompt: ${file("${path.module}/system-prompt.md")}

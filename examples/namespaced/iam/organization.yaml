@@ -1,0 +1,28 @@
+apiVersion: iam.coderd.m.crossplane.io/v1alpha1
+kind: Organization
+metadata:
+  annotations:
+    meta.upbound.io/example-id: iam/v1alpha1/organization
+  labels:
+    testing.upbound.io/example-name: blueberry
+  name: blueberry
+  namespace: crossplane-system
+spec:
+  forProvider:
+    description: The organization for blueberries
+    displayName: Blueberry
+    groupSync:
+    - field: coder_groups
+      mapping:
+        toast:
+        - ${coderd_group.bread.id}
+    icon: /emojis/1fad0.png
+    name: blueberry
+    orgSyncIdpGroups:
+    - wibble
+    - wobble
+    roleSync:
+    - field: coder_roles
+      mapping:
+        manager:
+        - organization-user-admin

@@ -1,0 +1,16 @@
+apiVersion: iam.coderd.m.crossplane.io/v1alpha1
+kind: OrganizationSyncSettings
+metadata:
+  annotations:
+    meta.upbound.io/example-id: iam/v1alpha1/organizationsyncsettings
+  labels:
+    testing.upbound.io/example-name: org_sync
+  name: org-sync
+  namespace: crossplane-system
+spec:
+  forProvider:
+    assignDefault: false
+    field: wibble
+    mapping:
+      wobble:
+      - ${coderd_organization.my_organization.id}

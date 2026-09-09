@@ -1,0 +1,24 @@
+apiVersion: iam.coderd.crossplane.io/v1alpha1
+kind: OrganizationGroupSync
+metadata:
+  annotations:
+    meta.upbound.io/example-id: iam/v1alpha1/organizationgroupsync
+  labels:
+    testing.upbound.io/example-name: test
+  name: test
+spec:
+  forProvider:
+    autoCreateMissing: false
+    field: groups
+    mapping:
+      admin_users:
+      - ${coderd_group.admins.id}
+      mixed_group:
+      - ${coderd_group.test.id}
+      - ${coderd_group.admins.id}
+      test_developers:
+      - ${coderd_group.test.id}
+    organizationIdSelector:
+      matchLabels:
+        testing.upbound.io/example-name: test
+    regexFilter: test_.*|admin_.*
