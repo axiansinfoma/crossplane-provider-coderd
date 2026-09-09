@@ -1,39 +1,127 @@
-# provider-template
+# provider-coderd
 
-`provider-template` is a minimal [Crossplane](https://crossplane.io/) Provider
-that is meant to be used as a template for implementing new Providers. It comes
-with the following features that are meant to be refactored:
+`provider-coderd` is a [Crossplane](https://crossplane.io/) provider for
+[Coder](https://coder.com). It is generated with
+[Upjet](https://github.com/crossplane/upjet) from the
+[coderd Terraform provider](https://github.com/coder/terraform-provider-coderd)
+and exposes every resource that provider supports as a Crossplane managed
+resource.
 
-- A `ProviderConfig` type that only points to a credentials `Secret`.
-- A `MyType` resource type that serves as an example managed resource.
-- A managed resource controller that reconciles `MyType` objects and simply
-  prints their configuration in its `Observe` method.
+It requires **Crossplane v2** and serves each managed resource twice: as a
+cluster-scoped type under `*.coderd.crossplane.io` and as a namespaced type
+under `*.coderd.m.crossplane.io`.
+
+## Managed resources
+
+| API group | Kinds |
+| --- | --- |
+| `iam.coderd.crossplane.io` | `Organization`, `OrganizationGroupSync`, `OrganizationSyncSettings`, `User`, `Group` |
+| `template.coderd.crossplane.io` | `Template` |
+| `deployment.coderd.crossplane.io` | `License`, `WorkspaceProxy`, `ProvisionerKey`, `OAuth2ProviderSettings` |
+| `agents.coderd.crossplane.io` | `AIProvider`, `Model`, `DefaultModel`, `SystemPrompt`, `MCPServer` |
+
+Each group also exists in its namespaced form, e.g.
+`iam.coderd.m.crossplane.io`.
+
+## Getting started
+
+Install the provider:
+
+```console
+kubectl apply -f examples/install.yaml
+```
+
+Create a `Secret` holding the credentials for your Coder deployment. The keys
+mirror the configuration schema of the coderd Terraform provider — `url` and
+`token` are required, `default_organization_id` and `headers` are optional:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: coderd-creds
+  namespace: crossplane-system
+type: Opaque
+stringData:
+  credentials: |
+    {
+      "url": "https://coder.example.com",
+      "token": "<a Coder API token>"
+    }
+```
+
+Most resource types need a token with elevated permissions. Then point a
+`ProviderConfig` at it and create resources — see [examples/](examples/) for a
+manifest per kind, in both the cluster-scoped and the namespaced flavour.
+
+## How this provider is generated
+
+The provider runs the coderd Terraform provider under the Terraform CLI. Both
+binaries are baked into the controller image, and the controller drives a
+Terraform workspace per managed resource.
+
+Everything under `apis/`, `internal/controller/`, `package/crds/` and
+`examples-generated/` is generated. The inputs are:
+
+- `Makefile` — `TERRAFORM_PROVIDER_VERSION` pins the upstream release.
+- `config/schema.json` — the Terraform schema, from `terraform providers schema`.
+- `config/provider-metadata.yaml` — scraped from the upstream provider's docs.
+- `config/external_name.go` — how each resource's external name maps to its
+  Terraform ID.
+- `config/resources/resources.go` — the API group, kind and cross-resource
+  references of each resource.
+
+Regenerate with:
+
+```console
+make generate
+```
+
+## Staying in step with the Terraform provider
+
+`.github/workflows/update-terraform-provider.yml` checks weekly for a new
+release of the coderd Terraform provider, regenerates the provider and opens a
+pull request. Run the same thing locally with:
+
+```console
+# update to the latest upstream release
+./hack/update-terraform-provider.sh
+
+# or to a specific one
+./hack/update-terraform-provider.sh 0.0.26
+```
+
+A new **resource** in the upstream provider is not picked up automatically: add
+it to `config/external_name.go` and `config/resources/resources.go` first, then
+regenerate.
 
 ## Developing
 
-1. Use this repository as a template to create a new one.
-1. Run `make submodules` to initialize the "build" Make submodule we use for CI/CD.
-1. Rename the provider by running the following command:
-```shell
-  export provider_name=MyProvider # Camel case, e.g. GitHub
-  make provider.prepare provider=${provider_name}
-```
-4. Add your new type by running the following command:
-```shell
-  export group=sample # lower case e.g. core, cache, database, storage, etc.
-  export type=MyType # Camel casee.g. Bucket, Database, CacheCluster, etc.
-  make provider.addtype provider=${provider_name} group=${group} kind=${type}
-```
-5. Replace the *sample* group with your new group in apis/{provider}.go
-5. Replace the *mytype* type with your new type in internal/controller/{provider}.go
-5. Replace the default controller and ProviderConfig implementations with your own
-5. Register your new type into `SetupGated` function in `internal/controller/register.go`
-5. Run `make reviewable` to run code generation, linters, and tests.
-5. Run `make build` to build the provider.
+Run against a Kubernetes cluster:
 
-Refer to Crossplane's [CONTRIBUTING.md] file for more information on how the
-Crossplane community prefers to work. The [Provider Development][provider-dev]
-guide may also be of use.
+```console
+make run
+```
 
-[CONTRIBUTING.md]: https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md
-[provider-dev]: https://github.com/crossplane/crossplane/blob/master/contributing/guide-provider-development.md
+Build, push, and install:
+
+```console
+make all
+```
+
+Build binary:
+
+```console
+make build
+```
+
+Run code generation, linters and tests:
+
+```console
+make reviewable
+```
+
+## Report a Bug
+
+For filing bugs, suggesting improvements, or requesting new features, please
+open an [issue](https://github.com/axiansinfoma/crossplane-provider-coderd/issues).

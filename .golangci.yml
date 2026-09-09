@@ -1,4 +1,8 @@
 version: "2"
+output:
+  formats:
+    text:
+      path: stdout
 linters:
   enable:
     - asasalint
@@ -7,6 +11,7 @@ linters:
     - bodyclose
     - contextcheck
     - durationcheck
+    - errcheck
     - errchkjson
     - errorlint
     - exhaustive
@@ -17,6 +22,8 @@ linters:
     - gocyclo
     - gosec
     - gosmopolitan
+    - govet
+    - ineffassign
     - loggercheck
     - makezero
     - misspell
@@ -32,9 +39,11 @@ linters:
     - rowserrcheck
     - spancheck
     - sqlclosecheck
+    - staticcheck
     - testifylint
     - unconvert
     - unparam
+    - unused
     - zerologlint
   settings:
     dupl:
@@ -43,7 +52,9 @@ linters:
       check-type-assertions: false
       check-blank: false
       exclude-functions:
-        - fmt:.*,io/ioutil:^Read.*
+        - io/ioutil.ReadFile
+        - io.Copy(*bytes.Buffer)
+        - io.Copy(os.Stdout)
     goconst:
       min-len: 3
       min-occurrences: 5
@@ -73,9 +84,9 @@ linters:
       - linters:
           - dupl
           - errcheck
-          - exportloopref
           - gocyclo
           - gosec
+          - scopelint
           - unparam
         path: _test(ing)?\.go
       - linters:
@@ -95,11 +106,12 @@ linters:
           - gosec
         text: 'G104:'
     paths:
-      - zz_generated\..+\.go$
+      - zz_\..+\.go$
       - third_party$
       - builtin$
       - examples$
 issues:
+  max-issues-per-linter: 0
   max-same-issues: 0
   new: false
 formatters:
@@ -111,11 +123,11 @@ formatters:
       simplify: true
     goimports:
       local-prefixes:
-        - github.com/crossplane/provider-template
+        - github.com/axiansinfoma/crossplane-provider-coderd
   exclusions:
     generated: lax
     paths:
-      - zz_generated\..+\.go$
+      - zz_\..+\.go$
       - third_party$
       - builtin$
       - examples$

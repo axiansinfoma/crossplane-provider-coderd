@@ -1,0 +1,659 @@
+name: coderd
+resources:
+    coderd_agents_default_model:
+        subCategory: Agents
+        description: '~> This resource is experimental. Changes are expected, and it is not recommended for production use. ~> Warning This resource is only compatible with Coder version 2.37.0 https://github.com/coder/coder/releases/tag/v2.37.0 and later. Selects which coderd_agents_model is the default chat model for Coder Agents in an organization. Coder enforces a single default model per organization: marking a model as default automatically demotes the previous default in the same operation. Only one coderd_agents_default_model resource should exist per organization. Destroying this resource does not clear the default server-side. Coder requires a default once models exist and promotes a replacement when the current default is removed, so deleting this resource only stops Terraform from managing which model is default.'
+        name: coderd_agents_default_model
+        title: coderd_agents_default_model
+        examples:
+            - name: default
+              manifest: |-
+                {
+                  "model_id": "${coderd_agents_model.sonnet.id}",
+                  "organization_id": "${coderd_agents_model.sonnet.organization_id}"
+                }
+              references:
+                model_id: coderd_agents_model.sonnet.id
+                organization_id: coderd_agents_model.sonnet.organization_id
+              dependencies:
+                coderd_agents_model.sonnet: |-
+                    {
+                      "ai_provider_id": "${coderd_ai_provider.anthropic.id}",
+                      "context_limit": 200000,
+                      "display_name": "Claude 3.5 Sonnet",
+                      "model": "claude-3-5-sonnet-20241022"
+                    }
+                coderd_ai_provider.anthropic: |-
+                    {
+                      "api_key_wo": "${var.anthropic_api_key}",
+                      "api_key_wo_version": 1,
+                      "base_url": "https://api.anthropic.com",
+                      "name": "anthropic",
+                      "type": "anthropic"
+                    }
+        argumentDocs:
+            id: (String) Organization ID that identifies this organization's default Agents model selection.
+            model_id: (String) ID of the coderd_agents_model to mark as the organization's default. Usually this is coderd_agents_model.<name>.id.
+            organization_id: (String) Organization ID whose default Agents model is managed.
+        importStatements:
+            - |-
+              # The ID supplied is the name of the organization whose default model should be imported.
+              $ terraform import coderd_agents_default_model.default <organization-name>
+    coderd_agents_mcp_server:
+        subCategory: Agents
+        description: '~> This resource is experimental. Changes are expected, and it is not recommended for production use. ~> Warning This resource is only compatible with Coder version 2.37.0 https://github.com/coder/coder/releases/tag/v2.37.0 and later. -> _wo attributes are write-only https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments: their values are sent to Coder but never stored in Terraform state. This resource therefore requires Terraform 1.11 or later. Configures an organization-scoped MCP server for Coder Agents. Import IDs use'
+        name: coderd_agents_mcp_server
+        title: coderd_agents_mcp_server
+        examples:
+            - name: example
+              manifest: |-
+                {
+                  "api_key_header": "Authorization",
+                  "api_key_value_wo": "${var.mcp_api_key}",
+                  "api_key_value_wo_version": 1,
+                  "auth_type": "api_key",
+                  "availability": "default_on",
+                  "display_name": "Internal Search",
+                  "enabled": true,
+                  "model_intent": true,
+                  "slug": "internal-search",
+                  "tool_allow_list": [
+                    "search",
+                    "read_document"
+                  ],
+                  "url": "https://mcp.example.com/v1"
+                }
+              references:
+                api_key_value_wo: var.mcp_api_key
+        argumentDocs:
+            allow_in_plan_mode: (Boolean) Whether tools from this server are available in plan mode. Defaults to false.
+            api_key_header: (String) HTTP header used for API key authentication. It must be configured when creating a server with auth_type = "api_key" or changing its auth type to it.
+            api_key_value_wo: (String, Sensitive, Write-only) API key value. Bump api_key_value_wo_version to rotate it.
+            api_key_value_wo_version: (Number) Version for the write-only API key value. Bump it whenever the value changes.
+            auth_type: (String) Authentication type. Valid values are none, oauth2, api_key, custom_headers, and user_oidc. Defaults to none. Changing this value invalidates users' stored OAuth tokens and clears secrets for the previous authentication type.
+            availability: (String) Availability policy. Valid values are force_on, default_on, and default_off. Defaults to default_off.
+            created_at: (Number) Unix timestamp when the MCP server configuration was created.
+            custom_headers_wo: (Map of String, Sensitive, Write-only) HTTP headers used for custom header authentication. Bump custom_headers_wo_version to replace them.
+            custom_headers_wo_version: (Number) Version for the write-only custom headers. Bump it whenever the map changes.
+            description: (String) Description shown in Coder.
+            display_name: (String) Display name shown in Coder.
+            enabled: (Boolean) Whether the MCP server is enabled. Defaults to false.
+            forward_coder_headers: (Boolean) Whether Coder identity headers are forwarded to the MCP server. Defaults to false.
+            icon_url: (String) Icon URL shown in Coder.
+            id: (String) MCP server configuration ID.
+            model_intent: (Boolean) Whether the model may select this MCP server based on intent. Defaults to false.
+            oauth2_auth_url: (String) OAuth2 authorization URL. It can be populated by server-side discovery.
+            oauth2_client_id: (String) OAuth2 client ID. Leave this, oauth2_auth_url, and oauth2_token_url unset at creation to use OAuth discovery and dynamic client registration; switching an existing server back to discovery requires replacing the resource. Changing it invalidates users' stored OAuth tokens.
+            oauth2_client_secret_wo: (String, Sensitive, Write-only) OAuth2 client secret. Bump oauth2_client_secret_wo_version to rotate it.
+            oauth2_client_secret_wo_version: (Number) Version for the write-only OAuth2 client secret. Bump it whenever the secret changes.
+            oauth2_revocation_url: (String) OAuth2 token revocation URL. It can be populated by server-side discovery. Changing it invalidates users' stored OAuth tokens.
+            oauth2_scopes: (String) Space-separated OAuth2 scopes.
+            oauth2_token_url: (String) OAuth2 token URL. It can be populated by server-side discovery. Changing it invalidates users' stored OAuth tokens.
+            organization_id: (String) Organization ID that owns the MCP server configuration. Defaults to the provider default organization ID.
+            slug: (String) Organization-unique slug for the MCP server. The slug can be updated in place.
+            tool_allow_list: (Set of String) Tool names that are allowed. An empty set allows all tools unless denied.
+            tool_deny_list: (Set of String) Tool names that are denied.
+            transport: (String) MCP transport. Valid values are streamable_http and sse. Defaults to streamable_http.
+            updated_at: (Number) Unix timestamp when the MCP server configuration was last updated.
+            url: (String) MCP server URL. Changing this value invalidates users' stored OAuth tokens.
+        importStatements:
+            - |-
+              # The ID must contain the organization name and the MCP server slug.
+              $ terraform import coderd_agents_mcp_server.example <organization-name>/<slug>
+    coderd_agents_model:
+        subCategory: Agents
+        description: ~> This resource is experimental. Changes are to be expected, and we recommend using it with caution in production environments. ~> Warning This resource is only compatible with Coder version 2.37.0 https://github.com/coder/coder/releases/tag/v2.37.0 and later. Configures an organization-scoped, admin-managed chat model for Coder Agents, binding a model identifier to a configured AI provider (see coderd_ai_provider) along with context, compression, and optional JSON tuning settings. Import IDs use
+        name: coderd_agents_model
+        title: coderd_agents_model
+        examples:
+            - name: sonnet
+              manifest: |-
+                {
+                  "ai_provider_id": "${coderd_ai_provider.anthropic.id}",
+                  "context_limit": 200000,
+                  "display_name": "Claude 3.5 Sonnet",
+                  "enabled": true,
+                  "model": "claude-3-5-sonnet-20241022",
+                  "model_config": "${jsonencode({\n    max_output_tokens = 8192\n    temperature       = 0.7\n    reasoning_effort = {\n      default = \"high\"\n      max     = \"high\"\n    }\n    provider_options = {\n      anthropic = {\n        thinking = { budget_tokens = 4096 }\n      }\n    }\n  })}"
+                }
+              references:
+                ai_provider_id: coderd_ai_provider.anthropic.id
+              dependencies:
+                coderd_ai_provider.anthropic: |-
+                    {
+                      "api_key_wo": "${var.anthropic_api_key}",
+                      "api_key_wo_version": 1,
+                      "base_url": "https://api.anthropic.com",
+                      "name": "anthropic",
+                      "type": "anthropic"
+                    }
+        argumentDocs:
+            ai_provider_id: (String) AI provider ID that backs this model. Usually this is coderd_ai_provider.<name>.id. Updating it re-derives the read-only provider_type from the referenced provider.
+            compression_threshold: (Number) Percentage of the context window at which Coder should compact chat context. Defaults to 70 and must be between 0 and 100.
+            context_limit: (Number) Maximum context window for this model. Must be greater than zero.
+            created_at: (Number) Creation timestamp as Unix seconds.
+            display_name: (String) Display name shown in Coder.
+            enabled: (Boolean) Whether this model configuration is enabled. Defaults to true.
+            id: (String) Agents model configuration ID.
+            model: (String) Model identifier to use with the referenced provider.
+            model_config: (String) Optional JSON blob of per-call tuning for the model, such as max_output_tokens, temperature, top_p, and provider_options. See the field reference (including per-provider provider_options) at https://pkg.go.dev/github.com/coder/coder/v2/codersdk#ChatModelCallConfig.
+            organization_id: (String) Organization ID that owns the Agents model configuration. Defaults to the provider default organization ID.
+            provider_type: (String) Provider type derived by Coder from ai_provider_id, for example openai, anthropic, or bedrock.
+            updated_at: (Number) Last update timestamp as Unix seconds.
+        importStatements:
+            - |-
+              # The ID supplied must be the organization name and the Agents model configuration UUID returned by Coder.
+              $ terraform import coderd_agents_model.sonnet <organization-name>/<model-config-id>
+    coderd_agents_system_prompt:
+        subCategory: Agents
+        description: ~> This resource is experimental. Changes are to be expected, and we recommend using it with caution in production environments. The deployment-wide chat system prompt for Coder Agents (Settings → Instructions in the dashboard). This is a deployment-wide singleton. Declare it once; duplicate resources silently overwrite each other. Coder sanitizes the stored prompt (strips invisible Unicode characters, normalizes line endings, collapses runs of blank lines, and trims surrounding whitespace), and this resource compares values the same way, so a trailing newline from file(...) does not cause drift after apply. On the first plan after an import, a configured value that differs from the live one only by sanitization shows a single in-place normalization update and then converges; use trimspace(file(...)) to avoid even that. ~> Warning If a system prompt was configured out of band, terraform import this resource before the first apply. Otherwise Terraform overwrites the live value; a plan-time warning is emitted when this is about to happen. ~> Warning terraform destroy resets the prompt to empty and include_default_system_prompt to true, the defaults of a never-configured deployment. The API has no delete operation for this setting. ~> Warning This resource requires Coder version 2.37.0 https://github.com/coder/coder/releases/tag/v2.37.0 or later, and a token with site-wide owner permissions.
+        name: coderd_agents_system_prompt
+        title: coderd_agents_system_prompt
+        examples:
+            - name: this
+              manifest: |-
+                {
+                  "include_default_system_prompt": true,
+                  "system_prompt": "${file(\"${path.module}/system-prompt.md\")}"
+                }
+        argumentDocs:
+            include_default_system_prompt: (Boolean) Whether the custom prompt is appended to Coder's built-in system prompt (true, the default) or replaces it entirely (false).
+            system_prompt: (String) The custom system prompt text, typically file("${path.module}/system-prompt.md"). Limited to 128 KiB after sanitization.
+        importStatements:
+            - |-
+              # The agents system prompt is a deployment-wide singleton, so the import ID is
+              # required by the CLI syntax but otherwise unused.
+              terraform import coderd_agents_system_prompt.this agents_system_prompt
+    coderd_ai_provider:
+        subCategory: AI Governance
+        description: '~> This resource is experimental. Changes are expected, and it is not recommended for production use. -> _wo attributes are write-only https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments: their values are sent to Coder but never stored in Terraform state. This resource therefore requires Terraform 1.11 or later. Configures an AI Provider for use with Coder''s AI Gateway & Coder Agents. For type = "bedrock", omit settings.bedrock.access_key_wo and settings.bedrock.access_key_secret_wo to use the AWS SDK default credential chain as resolved by the Coder server process (IAM role, IRSA, environment variables, shared config, SSO, IMDS, and more). Set both together to use static IAM-user credentials.'
+        name: coderd_ai_provider
+        title: coderd_ai_provider
+        examples:
+            - name: bedrock
+              manifest: |-
+                {
+                  "base_url": "https://bedrock-runtime.us-east-1.amazonaws.com",
+                  "display_name": "AWS Bedrock",
+                  "enabled": true,
+                  "name": "aws-bedrock",
+                  "settings": {
+                    "bedrock": {
+                      "model": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+                      "small_fast_model": "anthropic.claude-3-5-haiku-20241022-v1:0"
+                    }
+                  },
+                  "type": "bedrock"
+                }
+            - name: openai
+              manifest: |-
+                {
+                  "api_key_wo": "${var.openai_api_key}",
+                  "api_key_wo_version": 1,
+                  "base_url": "https://api.openai.com/v1",
+                  "display_name": "OpenAI",
+                  "enabled": true,
+                  "name": "openai",
+                  "type": "openai"
+                }
+              references:
+                api_key_wo: var.openai_api_key
+        argumentDocs:
+            access_key_secret_wo: (String, Sensitive, Write-only) AWS secret access key for Bedrock.
+            access_key_wo: (String, Sensitive, Write-only) AWS access key ID for Bedrock. See Coder's Amazon Bedrock provider docs.
+            api_key_masked: (String) Masked API key value returned by Coder for display only.
+            api_key_wo: (String, Sensitive, Write-only) Plaintext API key for the provider. Not valid for bedrock or copilot, or when settings.bedrock is set. Bump api_key_wo_version to rotate it.
+            api_key_wo_version: (Number) Version for the write-only API key. Required when api_key_wo is set; bump it whenever api_key_wo changes to rotate the stored key.
+            base_url: (String) Absolute HTTP(S) base URL for the upstream provider endpoint.
+            bedrock: (Attributes) AWS Bedrock settings. Valid only for type = "bedrock" or type = "anthropic". (see below for nested schema)
+            created_at: (Number) Creation timestamp as Unix seconds.
+            credentials_wo_version: (Number) Version for Bedrock write-only credentials. Bump this value to send, rotate, or clear credentials.
+            display_name: (String) Display name shown in Coder. If omitted, defaults to the provider name.
+            enabled: (Boolean) Whether this AI provider is enabled. Defaults to true.
+            external_id: (String) STS external ID the server generates and sends on the AssumeRole call when role_arn is set. Reference it in the assumed role's trust policy sts:ExternalId condition. Null until role_arn is first configured; stable afterwards. Requires Coder v2.36.0 or later.
+            id: (String) AI provider ID.
+            model: (String) Primary Bedrock model identifier.
+            name: (String) Unique provider name. Must be lowercase alphanumeric words separated by hyphens.
+            protocol: (String) Bedrock wire protocol. "invoke-model" (default) translates the native Messages request into Bedrock's InvokeModel format and requires model and small_fast_model. "mantle" forwards the native Messages request body unchanged with AWS SigV4 signing and passes through the client's model; requires region (the Mantle base URL is not a canonical Bedrock URL, so the region is never derived from base_url). Requires Coder v2.36.0 or later for the Mantle protocol. Omit (or set to "invoke-model") to use the default. Removing the attribute clears it back to the default; Coder maps an empty value to "invoke-model".
+            region: (String) AWS region for Bedrock. If omitted, derived from the canonical Bedrock base_url attribute.
+            role_arn: (String) ARN of an AWS IAM role to assume via STS before calling Bedrock. The base identity (the AWS SDK default credential chain or the static credentials) signs the AssumeRole call, and the temporary credentials sign Bedrock requests. Omit to call Bedrock with the base identity directly. Requires Coder v2.35.0 or later.
+            settings: (Attributes) Type-specific provider settings. (see below for nested schema)
+            small_fast_model: (String) Small/fast Bedrock model identifier used for background tasks.
+            type: (String) AI provider type. Valid values are openai, anthropic, azure, bedrock, google, openai-compat, openrouter, vercel, and copilot.
+            updated_at: (Number) Last update timestamp as Unix seconds.
+        importStatements:
+            - |-
+              # The ID supplied can be either an AI provider UUID or name.
+              # Existing remote API keys are preserved. Omit api_key_wo and api_key_wo_version
+              # to leave them unmanaged, or configure both to replace them on a later apply.
+              $ terraform import coderd_ai_provider.example openai
+    coderd_group:
+        subCategory: Identity & Access Management
+        description: A group on the Coder deployment. Creating groups requires an Enterprise license.
+        name: coderd_group
+        title: coderd_group
+        examples:
+            - name: group1
+              manifest: |-
+                {
+                  "members": [
+                    "${coderd_user.coder1.id}",
+                    "${coderd_user.coder2.id}"
+                  ],
+                  "name": "group1"
+                }
+              references:
+                members: coderd_user.coder1.id
+              dependencies:
+                coderd_user.coder1: |-
+                    {
+                      "email": "coder1@coder.com",
+                      "name": "Coder One",
+                      "username": "coder1"
+                    }
+                coderd_user.coder2: |-
+                    {
+                      "email": "coder2@coder.com",
+                      "name": "Coder One",
+                      "username": "coder2"
+                    }
+        argumentDocs:
+            avatar_url: (String) The URL of the group's avatar.
+            display_name: (String) The display name of the group. Defaults to the group name.
+            id: (String) Group ID.
+            members: (Set of String) Members of the group, by ID. If null, members will not be added or removed by Terraform. To have a group resource with unmanaged members, but be able to read the members in Terraform, use data.coderd_group
+            name: (String) The unique name of the group.
+            organization_id: (String) The organization ID that the group belongs to. Defaults to the provider default organization ID.
+            quota_allowance: (Number) The number of quota credits to allocate to each user in the group.
+        importStatements:
+            - |-
+              # The ID supplied can be either a group UUID retrieved via the API
+              # or a fully qualified name: `<organization-name>/<group-name>`.
+              $ terraform import coderd_group.example coder/developers
+    coderd_license:
+        subCategory: Deployment
+        description: A license for a Coder deployment. It's recommended to set create_before_destroy https://developer.hashicorp.com/terraform/language/meta-arguments/lifecycle#create_before_destroy on license resources. Without setting this, Terraform will remove the old license before adding the updated license. This will result in a temporary disruption to your users; during which they may be unable to use features that require a license. Terraform does not guarantee this resource will be created before other resources or attributes that require a licensed deployment. The depends_on meta-argument is instead recommended.
+        name: coderd_license
+        title: coderd_license
+        examples:
+            - name: license
+              manifest: |-
+                {
+                  "license": "\u003c…\u003e",
+                  "lifecycle": [
+                    {
+                      "create_before_destroy": true
+                    }
+                  ]
+                }
+        argumentDocs:
+            expires_at: (Number) Unix timestamp of when the license expires.
+            id: (Number) Integer ID of the license.
+            license: (String, Sensitive) A license key for Coder.
+        importStatements: []
+    coderd_oauth2_provider_settings:
+        subCategory: Deployment
+        description: Deployment-wide OAuth2 provider settings. This is a deployment-wide singleton. Declare it once; duplicate resources silently overwrite each other. ~> Warning If DCR was configured out of band, terraform import this resource before the first apply. Otherwise Terraform overwrites the live value without a diff; disabling an enabled setting emits a non-blocking warning. ~> Warning terraform destroy resets dynamic_client_registration_enabled to false, the deployment default. The API has no delete operation for this setting, so the value cannot be returned to a "never configured" state. -> Omit this resource to leave DCR unmanaged. Only one Terraform configuration should own it. ~> Warning This resource is only compatible with Coder version 2.37.0 https://github.com/coder/coder/releases/tag/v2.37.0 and later. ~> Warning Requires the oauth2 experiment (CODER_EXPERIMENTS=oauth2 or --experiments=oauth2); * does not enable it. Without it, /api/v2/oauth2-provider/settings returns 403 (development builds bypass this check).
+        name: coderd_oauth2_provider_settings
+        title: coderd_oauth2_provider_settings
+        examples:
+            - name: dcr
+              manifest: |-
+                {
+                  "depends_on": [
+                    "${terraform_data.coder_ready}"
+                  ],
+                  "dynamic_client_registration_enabled": true
+                }
+              dependencies:
+                terraform_data.coder_ready: |-
+                    {
+                      "depends_on": [
+                        "${helm_release.coder}"
+                      ],
+                      "provisioner": {
+                        "local-exec": [
+                          {
+                            "command": "until curl -sfo /dev/null $CODER_URL/api/v2/buildinfo; do sleep 5; done"
+                          }
+                        ]
+                      }
+                    }
+        argumentDocs:
+            dynamic_client_registration_enabled: (Boolean) Whether OAuth2 Dynamic Client Registration (RFC 7591) is enabled for the deployment. When disabled, POST /oauth2/register is rejected and the registration_endpoint is omitted from the authorization server metadata document.
+        importStatements:
+            - |-
+              # The singleton has no ID; any placeholder works.
+              # Import before the first apply to adopt the live value.
+              $ terraform import coderd_oauth2_provider_settings.dcr oauth2_provider_settings
+    coderd_organization:
+        subCategory: Identity & Access Management
+        description: An organization on the Coder deployment. ~> Warning This resource is only compatible with Coder version 2.16.0 https://github.com/coder/coder/releases/tag/v2.16.0 and later.
+        name: coderd_organization
+        title: coderd_organization
+        examples:
+            - name: blueberry
+              manifest: |-
+                {
+                  "description": "The organization for blueberries",
+                  "display_name": "Blueberry",
+                  "group_sync": [
+                    {
+                      "field": "coder_groups",
+                      "mapping": {
+                        "toast": [
+                          "${coderd_group.bread.id}"
+                        ]
+                      }
+                    }
+                  ],
+                  "icon": "/emojis/1fad0.png",
+                  "name": "blueberry",
+                  "org_sync_idp_groups": [
+                    "wibble",
+                    "wobble"
+                  ],
+                  "role_sync": [
+                    {
+                      "field": "coder_roles",
+                      "mapping": {
+                        "manager": [
+                          "organization-user-admin"
+                        ]
+                      }
+                    }
+                  ]
+                }
+        argumentDocs:
+            auto_create_missing: (Boolean) Controls whether groups will be created if they are missing.
+            coderd_organization_group_sync.icon: (String)
+            coderd_organization_group_sync.org_sync_idp_groups: (Set of String) Claims from the IdP provider that will give users access to this organization.
+            coderd_organization_group_sync.role_sync: (Block, Optional) Role sync settings to sync organization roles from an IdP. (see below for nested schema)
+            coderd_organization_group_sync.workspace_sharing: (String) Workspace sharing setting for the organization. Valid values are everyone and none. Requires a Coder Deployment running v2.32.0 or later.
+            description: (String)
+            display_name: (String) Display name of the organization. Defaults to name.
+            field: (String) The claim field that specifies what groups a user should be in.
+            group_sync: (Block, Optional, Deprecated) Group sync settings to sync groups from an IdP.
+            id: (String) Organization ID
+            mapping: (Map of List of String) A map from OIDC group name to Coder group ID.
+            name: (String) Name of the organization.
+            regex_filter: (String) A regular expression that will be used to filter the groups returned by the OIDC provider. Any group not matched will be ignored.
+        importStatements:
+            - |-
+              # The ID supplied can be either a organization UUID retrieved via the API
+              # or the name of the organization.
+              $ terraform import coderd_organization.our_org our-org
+    coderd_organization_group_sync:
+        subCategory: Identity & Access Management
+        description: Group sync settings for an organization on the Coder deployment. Multiple instances of this resource for a single organization will conflict. ~> Warning This resource is only compatible with Coder version 2.16.0 https://github.com/coder/coder/releases/tag/v2.16.0 and later.
+        name: coderd_organization_group_sync
+        title: coderd_organization_group_sync
+        examples:
+            - name: test
+              manifest: |-
+                {
+                  "auto_create_missing": false,
+                  "field": "groups",
+                  "mapping": {
+                    "admin_users": [
+                      "${coderd_group.admins.id}"
+                    ],
+                    "mixed_group": [
+                      "${coderd_group.test.id}",
+                      "${coderd_group.admins.id}"
+                    ],
+                    "test_developers": [
+                      "${coderd_group.test.id}"
+                    ]
+                  },
+                  "organization_id": "${coderd_organization.test.id}",
+                  "regex_filter": "test_.*|admin_.*"
+                }
+              references:
+                organization_id: coderd_organization.test.id
+        argumentDocs:
+            auto_create_missing: (Boolean) Controls whether groups will be created if they are missing. Defaults to false.
+            field: (String) The claim field that specifies what groups a user should be in.
+            mapping: (Map of List of String) A map from OIDC group name to Coder group ID.
+            organization_id: (String) The ID of the organization to configure group sync for.
+            regex_filter: (String) A regular expression that will be used to filter the groups returned by the OIDC provider. Any group not matched will be ignored.
+        importStatements:
+            - |-
+              # The ID supplied must be an organization UUID
+              $ terraform import coderd_organization_group_sync.main_group_sync <org-id>
+    coderd_organization_sync_settings:
+        subCategory: Identity & Access Management
+        description: IdP sync settings for organizations. This resource can only be created once. Attempts to create multiple will fail. ~> Warning This resource is only compatible with Coder version 2.19.0 https://github.com/coder/coder/releases/tag/v2.19.0 and later.
+        name: coderd_organization_sync_settings
+        title: coderd_organization_sync_settings
+        examples:
+            - name: org_sync
+              manifest: |-
+                {
+                  "assign_default": false,
+                  "field": "wibble",
+                  "mapping": {
+                    "wobble": [
+                      "${coderd_organization.my_organization.id}"
+                    ]
+                  }
+                }
+        argumentDocs:
+            assign_default: (Boolean) When true, every user will be added to the default organization, regardless of claims.
+            field: (String) The claim field that specifies what organizations a user should be in.
+            mapping: (Map of List of String) A map from OIDC group name to Coder organization ID.
+        importStatements: []
+    coderd_provisioner_key:
+        subCategory: Deployment
+        description: A provisioner key for a Coder deployment.
+        name: coderd_provisioner_key
+        title: coderd_provisioner_key
+        argumentDocs:
+            key: (String, Sensitive) The acquired provisioner key
+            name: (String) The name of the key.
+            organization_id: (String) The organization that provisioners connected with this key will be connected to.
+            tags: (Map of String) The tags that provisioners connected with this key will accept jobs for.
+        importStatements: []
+    coderd_template:
+        subCategory: Templates
+        description: A Coder template. Logs from building template versions can be optionally streamed from the provisioner by setting the TF_LOG environment variable to INFO or higher.
+        name: coderd_template
+        title: coderd_template
+        examples:
+            - name: ubuntu-main
+              manifest: |-
+                {
+                  "acl": {
+                    "groups": [],
+                    "users": [
+                      {
+                        "id": "${coderd_user.coder1.id}",
+                        "role": "admin"
+                      }
+                    ]
+                  },
+                  "description": "The main template for developing on Ubuntu.",
+                  "name": "ubuntu-main",
+                  "versions": [
+                    {
+                      "description": "The stable version of the template.",
+                      "directory": "./stable-template",
+                      "name": "stable-${var.COMMIT_SHA}"
+                    },
+                    {
+                      "description": "The staging version of the template.",
+                      "directory": "./staging-template",
+                      "name": "staging-${var.COMMIT_SHA}"
+                    }
+                  ]
+                }
+              dependencies:
+                coderd_user.coder1: |-
+                    {
+                      "email": "coder1@coder.com",
+                      "name": "Coder One",
+                      "username": "coder1"
+                    }
+        argumentDocs:
+            acl: (Attributes) (Enterprise) Access control list for the template. If null, ACL policies will not be added, removed, or read by Terraform. (see below for nested schema)
+            active: (Boolean) Whether this version is the active version of the template. Only one version can be active at a time.
+            activity_bump_ms: (Number) The activity bump duration for all workspaces created from this template, in milliseconds. Defaults to one hour.
+            agents_allowed: (Boolean) Whether Coder Agents can create workspaces from this template. Coder defaults this setting to true. Requires a Coder deployment running v2.37.0 or later.
+            allow_user_auto_start: (Boolean) (Enterprise) Whether users can auto-start workspaces created from this template. Defaults to true.
+            allow_user_auto_stop: (Boolean) (Enterprise) Whether users can auto-stop workspaces created from this template. Defaults to true.
+            allow_user_cancel_workspace_jobs: (Boolean) Whether users can cancel in-progress workspace jobs using this template. Defaults to true.
+            auto_start_permitted_days_of_week: (Set of String) (Enterprise) List of days of the week in which autostart is allowed to happen, for all workspaces created from this template. Defaults to all days. If no days are specified, autostart is not allowed.
+            auto_stop_requirement: (Attributes) (Enterprise) The auto-stop requirement for all workspaces created from this template. (see below for nested schema)
+            cors_behavior: (String) The CORS behavior for workspace apps in this template. Valid values are simple (default CORS middleware) or passthru (bypass CORS middleware). Defaults to simple. Requires a Coder deployment running v2.26.0 or later.
+            days_of_week: (Set of String) List of days of the week on which restarts are required. Restarts happen within the user's quiet hours (in their configured timezone). If no days are specified, restarts are not required.
+            default_ttl_ms: (Number) The default time-to-live for all workspaces created from this template, in milliseconds.
+            deprecation_message: (String) If set, the template will be marked as deprecated with the provided message and users will be blocked from creating new workspaces from it. Does nothing if set when the resource is created.
+            description: (String) A description of the template.
+            directory: (String) A path to the directory to create the template version from. Changes in the directory contents will trigger the creation of a new template version.
+            directory_hash: (String)
+            display_name: (String) The display name of the template. Defaults to the template name.
+            failure_ttl_ms: (Number) (Enterprise) The max lifetime before Coder stops all resources for failed workspaces created from this template, in milliseconds.
+            groups: (Attributes Set) (see below for nested schema)
+            icon: (String) Relative path or external URL that specifies an icon to be displayed in the dashboard.
+            id: (String) The ID of the template.
+            max_port_share_level: (String) (Enterprise) The maximum port share level for workspaces created from this template. Defaults to owner on an Enterprise deployment, or public otherwise.
+            message: (String) A message describing the changes in this version of the template. Messages longer than 72 characters will be truncated.
+            name: (String) The name of the template.
+            organization_id: (String) The ID of the organization. Defaults to the provider's default organization
+            provisioner_tags: (Attributes Set) Provisioner tags for the template version. (see below for nested schema)
+            require_active_version: (Boolean) (Enterprise) Whether workspaces must be created from the active version of this template. Defaults to false.
+            role: (String) Role assigned to the user or group. Valid roles are admin and use.
+            tf_vars: (Attributes Set) Terraform variables for the template version. (see below for nested schema)
+            time_til_dormant_autodelete_ms: (Number) (Enterprise) The max lifetime before Coder permanently deletes dormant workspaces created from this template.
+            time_til_dormant_ms: (Number) (Enterprise) The max lifetime before Coder locks inactive workspaces created from this template, in milliseconds.
+            use_classic_parameter_flow: (Boolean) If true, the classic parameter flow will be used when creating workspaces from this template. Defaults to false.
+            users: (Attributes Set) (see below for nested schema)
+            value: (String)
+            versions: (Attributes List) The template versions to manage. If null, Terraform will not create, update, or read template versions, and will only manage the template's other settings. At least one version (with active = true) is required when creating a new template, since Coder templates cannot exist without a version. (see below for nested schema)
+            weeks: (Number) Weeks is the number of weeks between required restarts. Weeks are synced across all workspaces (and Coder deployments) using modulo math on a hardcoded epoch week of January 2nd, 2023 (the first Monday of 2023). Values of 0 or 1 indicate weekly restarts. Values of 2 indicate fortnightly restarts, etc.
+        importStatements:
+            - |-
+              # The ID supplied can be either a template UUID retrieved via the API
+              # or a fully qualified name: `<organization-name>/<template-name>`.
+              $ terraform import coderd_template.example coder/dogfood
+    coderd_user:
+        subCategory: Identity & Access Management
+        description: A user on the Coder deployment.
+        name: coderd_user
+        title: coderd_user
+        examples:
+            - name: jenkins
+              manifest: |-
+                {
+                  "email": "ci@example.com",
+                  "login_type": "none",
+                  "name": "Jenkins CI/CD",
+                  "roles": [
+                    "template-admin"
+                  ],
+                  "username": "jenkins"
+                }
+            - name: audit
+              manifest: |-
+                {
+                  "email": "security@example.com",
+                  "login_type": "password",
+                  "name": "Auditor",
+                  "password": "${data.vault_password.auditor.value}",
+                  "roles": [
+                    "auditor"
+                  ],
+                  "username": "auditor"
+                }
+              references:
+                password: data.vault_password.auditor.value
+            - name: admin
+              manifest: |-
+                {
+                  "email": "admin@example.com",
+                  "suspended": true,
+                  "username": "admin"
+                }
+            - name: automation
+              manifest: |-
+                {
+                  "is_service_account": true,
+                  "name": "Automation",
+                  "roles": [
+                    "template-admin"
+                  ],
+                  "username": "automation"
+                }
+        argumentDocs:
+            email: (String) Email address of the user. Required unless is_service_account is true, in which case it must be omitted (service accounts have no email).
+            id: (String) User ID
+            is_service_account: '(Boolean) Whether the user is a service account. Service accounts are admin-managed accounts that cannot log in interactively: they have no password or email and use login_type none. Unlike a regular login_type = none user, a service account does not consume a licensed user seat. Changing this attribute forces replacement.'
+            login_type: (String) Type of login for the user. Valid types are none, password, github, and oidc.
+            name: (String) Display name of the user. Defaults to username.
+            password: (String, Sensitive) Password for the user. Required when login_type is password. Passwords are saved into the state as plain text and should only be used for testing purposes.
+            roles: (Set of String) Roles assigned to the user. Valid roles are owner, template-admin, user-admin, and auditor. If null, roles will not be managed by Terraform. This attribute must be null if the user is an OIDC user and role sync is configured
+            suspended: (Boolean) Whether the user is suspended.
+            username: (String) Username of the user.
+        importStatements:
+            - |-
+              # The ID supplied can be either a user UUID retrieved via the API
+              # or a username.
+              $ terraform import coderd_user.example developer
+    coderd_workspace_proxy:
+        subCategory: Deployment
+        description: A Workspace Proxy for the Coder deployment.
+        name: coderd_workspace_proxy
+        title: coderd_workspace_proxy
+        examples:
+            - name: sydney-wsp
+              manifest: |-
+                {
+                  "display_name": "Australia (Sydney)",
+                  "icon": "/emojis/1f1e6-1f1fa.png",
+                  "name": "sydney-wsp"
+                }
+              dependencies:
+                kubernetes_deployment.syd_wsproxy: |-
+                    {
+                      "metadata": [
+                        {}
+                      ],
+                      "spec": [
+                        {
+                          "template": [
+                            {
+                              "metadata": [
+                                {}
+                              ],
+                              "spec": [
+                                {
+                                  "container": [
+                                    {
+                                      "args": [
+                                        "wsproxy",
+                                        "server"
+                                      ],
+                                      "env": [
+                                        {
+                                          "name": "CODER_PROXY_SESSION_TOKEN",
+                                          "value": "${coderd_workspace_proxy.sydney-wsp.session_token}"
+                                        }
+                                      ],
+                                      "image": "ghcr.io/coder/coder:latest",
+                                      "name": "syd-wsp"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+        argumentDocs:
+            display_name: (String) Display name of the workspace proxy.
+            icon: (String) Relative path or external URL that specifies an icon to be displayed in the dashboard.
+            id: (String) Workspace Proxy ID
+            name: (String) Name of the workspace proxy.
+            session_token: (String, Sensitive) Session token for the workspace proxy.
+        importStatements: []

@@ -1,0 +1,11 @@
+apiVersion: deployment.coderd.crossplane.io/v1alpha1
+kind: OAuth2ProviderSettings
+metadata:
+  annotations:
+    meta.upbound.io/example-id: deployment/v1alpha1/oauth2providersettings
+  labels:
+    testing.upbound.io/example-name: dcr
+  name: dcr
+spec:
+  forProvider:
+    dynamicClientRegistrationEnabled: true

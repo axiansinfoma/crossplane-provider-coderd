@@ -1,0 +1,73 @@
+name: Update Terraform Provider
+
+# Keeps this provider in step with the coderd Terraform provider it is
+# generated from: checks for a new upstream release, regenerates everything
+# that derives from it, and opens a pull request with the result.
+
+on:
+  schedule:
+    # Every Monday at 06:00 UTC.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'coderd Terraform provider version to update to (defaults to its latest release)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          submodules: true
+
+      - name: Setup Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: go.mod
+
+      - name: Update the Terraform provider and regenerate
+        id: update
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./hack/update-terraform-provider.sh "${{ github.event.inputs.version }}"
+
+      - name: Build
+        if: steps.update.outputs.updated == 'true'
+        run: make build
+
+      - name: Open a pull request
+        if: steps.update.outputs.updated == 'true'
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: update-terraform-provider-coderd-${{ steps.update.outputs.target }}
+          delete-branch: true
+          commit-message: |
+            Generate from terraform-provider-coderd v${{ steps.update.outputs.target }}
+
+            Bumps the coderd Terraform provider this provider is generated from
+            and regenerates the Terraform schema, the scraped documentation, the
+            API types, the controllers, the CRDs and the examples.
+          title: 'Generate from terraform-provider-coderd v${{ steps.update.outputs.target }}'
+          body: |
+            The coderd Terraform provider this provider is generated from was
+            released as
+            [v${{ steps.update.outputs.target }}](https://github.com/coder/terraform-provider-coderd/releases/tag/v${{ steps.update.outputs.target }}),
+            up from v${{ steps.update.outputs.current }}.
+
+            This pull request bumps `TERRAFORM_PROVIDER_VERSION` and regenerates
+            everything that derives from it. Review the CRD diff before merging:
+            new resources in the upstream provider need an entry in
+            `config/external_name.go` and `config/resources/resources.go` before
+            they are generated at all.
+          labels: automated

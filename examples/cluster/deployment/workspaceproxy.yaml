@@ -1,0 +1,13 @@
+apiVersion: deployment.coderd.crossplane.io/v1alpha1
+kind: WorkspaceProxy
+metadata:
+  annotations:
+    meta.upbound.io/example-id: deployment/v1alpha1/workspaceproxy
+  labels:
+    testing.upbound.io/example-name: sydney-wsp
+  name: sydney-wsp
+spec:
+  forProvider:
+    displayName: Australia (Sydney)
+    icon: /emojis/1f1e6-1f1fa.png
+    name: sydney-wsp

@@ -1,0 +1,58 @@
+apiVersion: agents.coderd.m.crossplane.io/v1alpha1
+kind: DefaultModel
+metadata:
+  annotations:
+    meta.upbound.io/example-id: agents/v1alpha1/defaultmodel
+  labels:
+    testing.upbound.io/example-name: default
+  name: default
+  namespace: crossplane-system
+spec:
+  forProvider:
+    modelIdSelector:
+      matchLabels:
+        testing.upbound.io/example-name: sonnet
+    organizationIdSelector:
+      matchLabels:
+        testing.upbound.io/example-name: sonnet
+
+---
+
+apiVersion: agents.coderd.m.crossplane.io/v1alpha1
+kind: Model
+metadata:
+  annotations:
+    meta.upbound.io/example-id: agents/v1alpha1/defaultmodel
+  labels:
+    testing.upbound.io/example-name: sonnet
+  name: sonnet
+  namespace: crossplane-system
+spec:
+  forProvider:
+    aiProviderIdSelector:
+      matchLabels:
+        testing.upbound.io/example-name: anthropic
+    contextLimit: 200000
+    displayName: Claude 3.5 Sonnet
+    model: claude-3-5-sonnet-20241022
+
+---
+
+apiVersion: agents.coderd.m.crossplane.io/v1alpha1
+kind: AIProvider
+metadata:
+  annotations:
+    meta.upbound.io/example-id: agents/v1alpha1/defaultmodel
+  labels:
+    testing.upbound.io/example-name: anthropic
+  name: anthropic
+  namespace: crossplane-system
+spec:
+  forProvider:
+    apiKeyWoSecretRef:
+      key: example-key
+      name: example-secret
+    apiKeyWoVersion: 1
+    baseUrl: https://api.anthropic.com
+    name: anthropic
+    type: anthropic

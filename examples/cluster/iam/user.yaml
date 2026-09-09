@@ -1,0 +1,16 @@
+apiVersion: iam.coderd.crossplane.io/v1alpha1
+kind: User
+metadata:
+  annotations:
+    meta.upbound.io/example-id: iam/v1alpha1/user
+  labels:
+    testing.upbound.io/example-name: jenkins
+  name: jenkins
+spec:
+  forProvider:
+    email: ci@example.com
+    loginType: none
+    name: Jenkins CI/CD
+    roles:
+    - template-admin
+    username: jenkins
