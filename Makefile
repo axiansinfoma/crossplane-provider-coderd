@@ -4,6 +4,10 @@
 PROJECT_NAME ?= provider-coderd
 PROJECT_REPO ?= github.com/axiansinfoma/crossplane-provider-coderd
 
+# Terraform is only used at code generation time, to dump the JSON schema of the
+# coderd provider that the CRDs are generated from. At runtime the coderd
+# provider is linked into the controller and driven in-process, so neither
+# binary is shipped in the image.
 export TERRAFORM_VERSION ?= 1.5.7
 
 # Do not allow a version of terraform greater than 1.5.x, due to versions 1.6+ being
@@ -13,9 +17,6 @@ TERRAFORM_VERSION_VALID := $(shell [ "$(TERRAFORM_VERSION)" = "`printf "$(TERRAF
 export TERRAFORM_PROVIDER_SOURCE ?= coder/coderd
 export TERRAFORM_PROVIDER_REPO ?= https://github.com/coder/terraform-provider-coderd
 export TERRAFORM_PROVIDER_VERSION ?= 0.0.25
-export TERRAFORM_PROVIDER_DOWNLOAD_NAME ?= terraform-provider-coderd
-export TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX ?= https://github.com/coder/terraform-provider-coderd/releases/download/v$(TERRAFORM_PROVIDER_VERSION)
-export TERRAFORM_NATIVE_PROVIDER_BINARY ?= terraform-provider-coderd_v$(TERRAFORM_PROVIDER_VERSION)
 export TERRAFORM_DOCS_PATH ?= docs/resources
 
 

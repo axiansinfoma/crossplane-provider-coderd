@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Updates the coderd Terraform provider release this Crossplane provider is
-# generated from, and regenerates everything that derives from it: the Terraform
-# schema, the scraped provider documentation, the API types, the controllers,
-# the CRDs and the examples.
+# generated from and embeds, and regenerates everything that derives from it:
+# the Go module dependency, the Terraform schema, the scraped provider
+# documentation, the API types, the controllers, the CRDs and the examples.
 #
 # Usage:
 #   hack/update-terraform-provider.sh            # update to the latest release
@@ -81,6 +81,12 @@ fi
 
 log "updating from v${CURRENT} to v${TARGET}"
 sed -i -E "s|^export TERRAFORM_PROVIDER_VERSION \?= .*$|export TERRAFORM_PROVIDER_VERSION ?= ${TARGET}|" Makefile
+
+# The provider is linked into the controller, so the Go module must move to the
+# same release as the schema the CRDs are generated from.
+log "updating the embedded provider module to v${TARGET}"
+go get "github.com/coder/terraform-provider-coderd@v${TARGET}"
+go mod tidy
 
 # The schema and the docs checkout are both tied to the provider version.
 rm -rf .work/coder config/schema.json

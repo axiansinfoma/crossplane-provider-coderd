@@ -56,8 +56,9 @@ jobs:
             Generate from terraform-provider-coderd v${{ steps.update.outputs.target }}
 
             Bumps the coderd Terraform provider this provider is generated from
-            and regenerates the Terraform schema, the scraped documentation, the
-            API types, the controllers, the CRDs and the examples.
+            and embeds, and regenerates the Terraform schema, the scraped
+            documentation, the API types, the controllers, the CRDs and the
+            examples.
           title: 'Generate from terraform-provider-coderd v${{ steps.update.outputs.target }}'
           body: |
             The coderd Terraform provider this provider is generated from was
@@ -65,8 +66,9 @@ jobs:
             [v${{ steps.update.outputs.target }}](https://github.com/coder/terraform-provider-coderd/releases/tag/v${{ steps.update.outputs.target }}),
             up from v${{ steps.update.outputs.current }}.
 
-            This pull request bumps `TERRAFORM_PROVIDER_VERSION` and regenerates
-            everything that derives from it. Review the CRD diff before merging:
+            This pull request bumps `TERRAFORM_PROVIDER_VERSION`, moves the
+            embedded `github.com/coder/terraform-provider-coderd` module to the
+            same release and regenerates everything that derives from it. Review the CRD diff before merging:
             new resources in the upstream provider need an entry in
             `config/external_name.go` and `config/resources/resources.go` before
             they are generated at all.
