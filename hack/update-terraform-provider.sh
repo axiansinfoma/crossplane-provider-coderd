@@ -7,9 +7,13 @@
 # Usage:
 #   hack/update-terraform-provider.sh            # update to the latest release
 #   hack/update-terraform-provider.sh 0.0.26     # update to a specific version
+#   hack/update-terraform-provider.sh --dry-run  # only report what would happen
 #
 # When running inside GitHub Actions the outcome is also written to
-# $GITHUB_OUTPUT as the "current", "target" and "updated" outputs.
+# $GITHUB_OUTPUT as the "current", "target", "available" and "updated" outputs.
+# "available" is true whenever the target differs from the current version;
+# "updated" is true only when the working tree was actually regenerated, so it
+# is always false for a dry run.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -53,7 +57,20 @@ ensure_goimports() {
   export PATH="${bin}:${PATH}"
 }
 
-TARGET="${1:-}"
+DRY_RUN=false
+TARGET=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run) DRY_RUN=true ;;
+    -*)
+      echo "unknown flag: $1" >&2
+      exit 1
+      ;;
+    *) TARGET="$1" ;;
+  esac
+  shift
+done
+
 if [ -z "${TARGET}" ]; then
   log "resolving the latest release of ${REPO}"
   TARGET="$(latest_version)"
@@ -75,6 +92,15 @@ set_output target "${TARGET}"
 
 if [ "${CURRENT}" = "${TARGET}" ]; then
   log "already generated from ${REPO} v${CURRENT}, nothing to do"
+  set_output available false
+  set_output updated false
+  exit 0
+fi
+
+set_output available true
+
+if [ "${DRY_RUN}" = true ]; then
+  log "dry run: v${CURRENT} would be updated to v${TARGET}, leaving the tree untouched"
   set_output updated false
   exit 0
 fi

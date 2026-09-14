@@ -2,18 +2,33 @@ name: Update Terraform Provider
 
 # Keeps this provider in step with the coderd Terraform provider it is
 # generated from: checks for a new upstream release, regenerates everything
-# that derives from it, and opens a pull request with the result.
+# that derives from it, reports any potentially breaking change the bump
+# introduces, files a tracking issue and opens a pull request with the result.
+#
+# - pull_request: dry-run only, and only when the automation itself changes, so
+#   it does not run on every unrelated pull request.
+# - schedule / workflow_dispatch: files the issue and opens the pull request for
+#   real, unless the dry_run input says otherwise.
 
 on:
   schedule:
     # Every Monday at 06:00 UTC.
     - cron: '0 6 * * 1'
+  pull_request:
+    paths:
+      - 'hack/update-terraform-provider.sh'
+      - '.github/workflows/update-terraform-provider.yml'
   workflow_dispatch:
     inputs:
       version:
         description: 'coderd Terraform provider version to update to (defaults to its latest release)'
         required: false
         default: ''
+      dry_run:
+        description: 'Dry run (report only; do not regenerate, file an issue or open a pull request)'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -24,11 +39,26 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
+
+      - name: Determine dry-run mode
+        id: mode
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "${EVENT_NAME}" = "pull_request" ]; then
+            echo "dry_run=true" >> "$GITHUB_OUTPUT"
+          elif [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "dry_run=${INPUT_DRY_RUN}" >> "$GITHUB_OUTPUT"
+          else
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
@@ -39,11 +69,101 @@ jobs:
         id: update
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./hack/update-terraform-provider.sh "${{ github.event.inputs.version }}"
+          TARGET_VERSION: ${{ inputs.version }}
+          DRY_RUN: ${{ steps.mode.outputs.dry_run }}
+        run: |
+          args=()
+          if [ "${DRY_RUN}" = "true" ]; then
+            args+=(--dry-run)
+          fi
+          if [ -n "${TARGET_VERSION}" ]; then
+            args+=("${TARGET_VERSION}")
+          fi
+          ./hack/update-terraform-provider.sh "${args[@]}"
 
       - name: Build
         if: steps.update.outputs.updated == 'true'
         run: make build
+
+      # The regeneration is still uncommitted at this point, so HEAD is the
+      # pre-bump tree and both targets can diff against it exactly as they do
+      # against a pull request's base branch in CI.
+      - name: Report potential breaking changes
+        if: steps.update.outputs.updated == 'true'
+        env:
+          GITHUB_BASE_REF: HEAD
+        run: |
+          MODIFIED_CRD_LIST="$(git diff --name-only HEAD -- package/crds | tr '\n' ' ')"
+          export MODIFIED_CRD_LIST
+          {
+            make crddiff
+            make schema-version-diff
+          } 2>&1 | sed -r 's/\x1b\[[0-9;]*m//g' > /tmp/breaking-changes.txt || true
+          cat /tmp/breaking-changes.txt
+
+      - name: Compose the pull request body
+        if: steps.update.outputs.updated == 'true'
+        env:
+          CURRENT: ${{ steps.update.outputs.current }}
+          TARGET: ${{ steps.update.outputs.target }}
+        run: |
+          cat > /tmp/pr-body.md <<EOF
+          The coderd Terraform provider this provider is generated from was
+          released as
+          [v${TARGET}](https://github.com/coder/terraform-provider-coderd/releases/tag/v${TARGET}),
+          up from v${CURRENT}.
+
+          This pull request bumps \`TERRAFORM_PROVIDER_VERSION\`, moves the
+          embedded \`github.com/coder/terraform-provider-coderd\` module to the
+          same release and regenerates everything that derives from it. Review
+          the CRD diff before merging: new resources in the upstream provider
+          need an entry in \`config/external_name.go\` and
+          \`config/resources/resources.go\` before they are generated at all.
+
+          ## Potential breaking changes
+
+          Reported by \`make crddiff\` and \`make schema-version-diff\` against
+          the pre-bump tree. Read this as a prompt to look, not as a verdict --
+          \`crddiff\` also reports a tool failure as a breaking change.
+
+          \`\`\`
+          $(cat /tmp/breaking-changes.txt)
+          \`\`\`
+          EOF
+          cat /tmp/pr-body.md
+
+      - name: File a tracking issue
+        if: steps.update.outputs.updated == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          CURRENT: ${{ steps.update.outputs.current }}
+          TARGET: ${{ steps.update.outputs.target }}
+        run: |
+          TITLE="Bump terraform-provider-coderd to v${TARGET}"
+          EXISTING="$(gh issue list --repo "${REPO}" --state open --limit 200 \
+            --json number,title --jq "map(select(.title == \"${TITLE}\")) | .[0].number // empty")"
+          if [ -n "${EXISTING}" ]; then
+            echo "Already tracked by #${EXISTING}, not filing another issue."
+            exit 0
+          fi
+          gh issue create --repo "${REPO}" --title "${TITLE}" --label automated --body "$(cat <<EOF
+          [v${TARGET}](https://github.com/coder/terraform-provider-coderd/releases/tag/v${TARGET})
+          of the coderd Terraform provider is out, up from v${CURRENT}. The
+          \`update-terraform-provider\` workflow has opened a pull request with
+          the mechanical part of the bump; this issue tracks the rest.
+
+          - [ ] Review the CRD diff and the breaking-change report in the pull request.
+          - [ ] Add any new upstream resource to \`config/external_name.go\`.
+          - [ ] Give it an API group, kind and cross-resource references in \`config/resources/resources.go\`.
+          - [ ] Re-run \`make generate\` and commit the result.
+          - [ ] Add an example manifest under \`examples/cluster/<group>/\` and \`examples/namespaced/<group>/\`.
+          - [ ] Update the managed-resource table in \`README.md\` and the docs site.
+          - [ ] Merge the pull request.
+
+          _Filed automatically by the \`update-terraform-provider\` workflow._
+          EOF
+          )"
 
       - name: Open a pull request
         if: steps.update.outputs.updated == 'true'
@@ -60,16 +180,22 @@ jobs:
             documentation, the API types, the controllers, the CRDs and the
             examples.
           title: 'Generate from terraform-provider-coderd v${{ steps.update.outputs.target }}'
-          body: |
-            The coderd Terraform provider this provider is generated from was
-            released as
-            [v${{ steps.update.outputs.target }}](https://github.com/coder/terraform-provider-coderd/releases/tag/v${{ steps.update.outputs.target }}),
-            up from v${{ steps.update.outputs.current }}.
-
-            This pull request bumps `TERRAFORM_PROVIDER_VERSION`, moves the
-            embedded `github.com/coder/terraform-provider-coderd` module to the
-            same release and regenerates everything that derives from it. Review the CRD diff before merging:
-            new resources in the upstream provider need an entry in
-            `config/external_name.go` and `config/resources/resources.go` before
-            they are generated at all.
+          body-path: /tmp/pr-body.md
           labels: automated
+
+      - name: Summary
+        env:
+          CURRENT: ${{ steps.update.outputs.current }}
+          TARGET: ${{ steps.update.outputs.target }}
+          AVAILABLE: ${{ steps.update.outputs.available }}
+          UPDATED: ${{ steps.update.outputs.updated }}
+          DRY_RUN: ${{ steps.mode.outputs.dry_run }}
+        run: |
+          {
+            echo "## Update Terraform Provider"
+            echo
+            echo "- Current: \`v${CURRENT}\`"
+            echo "- Target: \`v${TARGET}\`"
+            echo "- New release available: \`${AVAILABLE}\`"
+            echo "- Regenerated: \`${UPDATED}\` (dry run: \`${DRY_RUN}\`)"
+          } >> "$GITHUB_STEP_SUMMARY"
