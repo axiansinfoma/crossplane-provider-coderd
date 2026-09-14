@@ -5,10 +5,3 @@ cover.out
 /vendor
 /.vendor-new
 .DS_Store
-
-# ignore IDE folders
-.vscode/
-.idea/
-
-# local clone of the upstream Terraform provider (for docs/schema inspection)
-/terraform-provider-coderd/
