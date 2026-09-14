@@ -12,3 +12,6 @@ cover.out
 
 # local clone of the upstream Terraform provider (for docs/schema inspection)
 /terraform-provider-coderd/
+
+# Python bytecode from the scripts/ automation
+__pycache__/

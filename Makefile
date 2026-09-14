@@ -246,6 +246,24 @@ schema-version-diff:
 	./scripts/version_diff.py config/generated.lst "$(WORK_DIR)/schema.json.$${PREV_PROVIDER_VERSION}" config/schema.json
 	@$(OK) Checking for native state schema version changes
 
+# Refreshes config/generated.lst from config.GetProvider(). Unlike `make
+# generate` this needs neither the Terraform CLI nor a docs checkout, so the
+# schema-diff-issues automation can regenerate the list from a bare checkout and
+# never mistake a stale file for a missing resource.
+generated-lst:
+	@$(INFO) Writing config/generated.lst
+	@go run ./cmd/generatedlist config/generated.lst
+	@$(OK) Writing config/generated.lst
+
+# Verifies config/generated.lst matches config.GetProvider(). Exits non-zero
+# when the committed file is stale; run generated-lst to fix it.
+generated-lst-check:
+	@$(INFO) Checking config/generated.lst is up to date
+	@go run ./cmd/generatedlist --check config/generated.lst || $(FAIL)
+	@$(OK) Checking config/generated.lst is up to date
+
+.PHONY: generated-lst generated-lst-check
+
 .PHONY: cobertura submodules fallthrough run crds.clean
 
 # ====================================================================================
