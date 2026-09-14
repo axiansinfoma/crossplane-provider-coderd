@@ -7,6 +7,8 @@
 and exposes every resource that provider supports as a Crossplane managed
 resource.
 
+Documentation: <https://axiansinfoma.github.io/crossplane-provider-coderd/>
+
 It requires **Crossplane v2** and serves each managed resource twice: as a
 cluster-scoped type under `*.coderd.crossplane.io` and as a namespaced type
 under `*.coderd.m.crossplane.io`.
