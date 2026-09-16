@@ -13,6 +13,7 @@ import (
 
 	clusterv1beta1 "github.com/axiansinfoma/crossplane-provider-coderd/apis/cluster/v1beta1"
 	namespacedv1beta1 "github.com/axiansinfoma/crossplane-provider-coderd/apis/namespaced/v1beta1"
+	"github.com/axiansinfoma/crossplane-provider-coderd/config"
 )
 
 const (
@@ -42,16 +43,15 @@ type credentials struct {
 	Headers map[string]string `json:"headers,omitempty"`
 }
 
-// TerraformSetupBuilder builds Terraform a terraform.SetupFn function which
-// returns Terraform provider setup configuration
-func TerraformSetupBuilder(version, providerSource, providerVersion string) terraform.SetupFn {
+// TerraformSetupBuilder builds a terraform.SetupFn which resolves the
+// ProviderConfig of a managed resource into the configuration of the embedded
+// coderd Terraform provider. Every resource is driven in-process through the
+// Terraform plugin framework, so the setup carries the provider instance to
+// configure rather than a Terraform CLI requirement.
+func TerraformSetupBuilder() terraform.SetupFn {
 	return func(ctx context.Context, client client.Client, mg resource.Managed) (terraform.Setup, error) {
 		ps := terraform.Setup{
-			Version: version,
-			Requirement: terraform.ProviderRequirement{
-				Source:  providerSource,
-				Version: providerVersion,
-			},
+			FrameworkProvider: config.NewFrameworkProvider(),
 		}
 
 		pcSpec, err := resolveProviderConfig(ctx, client, mg)

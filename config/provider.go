@@ -24,11 +24,20 @@ var providerSchema string
 //go:embed provider-metadata.yaml
 var providerMetadata string
 
-// GetProvider returns provider configuration
+// GetProvider returns provider configuration.
+//
+// Every resource is reconciled through upjet's Terraform plugin framework
+// client, which drives the embedded coderd provider in-process. The Terraform
+// JSON schema is still what the CRDs are generated from; the embedded provider
+// supplies the resource implementations.
 func GetProvider() *ujconfig.Provider {
 	pc := ujconfig.NewProvider([]byte(providerSchema), resourcePrefix, modulePath, []byte(providerMetadata),
 		ujconfig.WithRootGroup("coderd.crossplane.io"),
-		ujconfig.WithIncludeList(ExternalNameConfigured()),
+		ujconfig.WithTerraformPluginFrameworkProvider(NewFrameworkProvider()),
+		ujconfig.WithTerraformPluginFrameworkIncludeList(ExternalNameConfigured()),
+		// Nothing is reconciled through the Terraform CLI; the default include
+		// list would otherwise match every resource a second time.
+		ujconfig.WithIncludeList([]string{}),
 		ujconfig.WithFeaturesPackage("internal/features"),
 		ujconfig.WithDefaultResourceOptions(
 			ExternalNameConfigurations(),
@@ -48,7 +57,11 @@ func GetProvider() *ujconfig.Provider {
 func GetProviderNamespaced() *ujconfig.Provider {
 	pc := ujconfig.NewProvider([]byte(providerSchema), resourcePrefix, modulePath, []byte(providerMetadata),
 		ujconfig.WithRootGroup("coderd.m.crossplane.io"),
-		ujconfig.WithIncludeList(ExternalNameConfigured()),
+		ujconfig.WithTerraformPluginFrameworkProvider(NewFrameworkProvider()),
+		ujconfig.WithTerraformPluginFrameworkIncludeList(ExternalNameConfigured()),
+		// Nothing is reconciled through the Terraform CLI; the default include
+		// list would otherwise match every resource a second time.
+		ujconfig.WithIncludeList([]string{}),
 		ujconfig.WithFeaturesPackage("internal/features"),
 		ujconfig.WithDefaultResourceOptions(
 			ExternalNameConfigurations(),

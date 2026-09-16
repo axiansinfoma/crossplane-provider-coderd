@@ -61,6 +61,14 @@ spec:
             properties:
               forProvider:
                 properties:
+                  defaultOrgMemberRoles:
+                    description: |-
+                      in organization role names that are unioned into every member's effective roles. Changes propagate to members on their next request. Requires a Coder Deployment running v2.37.0 or later.
+                      Built-in organization role names that are unioned into every member's effective roles. Changes propagate to members on their next request. Requires a Coder Deployment running v2.37.0 or later.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
                   description:
                     description: (String)
                     type: string
@@ -160,6 +168,14 @@ spec:
                   for example because of an external controller is managing them, like an
                   autoscaler.
                 properties:
+                  defaultOrgMemberRoles:
+                    description: |-
+                      in organization role names that are unioned into every member's effective roles. Changes propagate to members on their next request. Requires a Coder Deployment running v2.37.0 or later.
+                      Built-in organization role names that are unioned into every member's effective roles. Changes propagate to members on their next request. Requires a Coder Deployment running v2.37.0 or later.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
                   description:
                     description: (String)
                     type: string
@@ -314,6 +330,14 @@ spec:
             properties:
               atProvider:
                 properties:
+                  defaultOrgMemberRoles:
+                    description: |-
+                      in organization role names that are unioned into every member's effective roles. Changes propagate to members on their next request. Requires a Coder Deployment running v2.37.0 or later.
+                      Built-in organization role names that are unioned into every member's effective roles. Changes propagate to members on their next request. Requires a Coder Deployment running v2.37.0 or later.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
                   description:
                     description: (String)
                     type: string

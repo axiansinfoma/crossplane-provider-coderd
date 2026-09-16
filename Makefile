@@ -4,6 +4,10 @@
 PROJECT_NAME ?= provider-coderd
 PROJECT_REPO ?= github.com/axiansinfoma/crossplane-provider-coderd
 
+# Terraform is only used at code generation time, to dump the JSON schema of the
+# coderd provider that the CRDs are generated from. At runtime the coderd
+# provider is linked into the controller and driven in-process, so neither
+# binary is shipped in the image.
 export TERRAFORM_VERSION ?= 1.5.7
 
 # Do not allow a version of terraform greater than 1.5.x, due to versions 1.6+ being
@@ -12,10 +16,7 @@ TERRAFORM_VERSION_VALID := $(shell [ "$(TERRAFORM_VERSION)" = "`printf "$(TERRAF
 
 export TERRAFORM_PROVIDER_SOURCE ?= coder/coderd
 export TERRAFORM_PROVIDER_REPO ?= https://github.com/coder/terraform-provider-coderd
-export TERRAFORM_PROVIDER_VERSION ?= 0.0.25
-export TERRAFORM_PROVIDER_DOWNLOAD_NAME ?= terraform-provider-coderd
-export TERRAFORM_PROVIDER_DOWNLOAD_URL_PREFIX ?= https://github.com/coder/terraform-provider-coderd/releases/download/v$(TERRAFORM_PROVIDER_VERSION)
-export TERRAFORM_NATIVE_PROVIDER_BINARY ?= terraform-provider-coderd_v$(TERRAFORM_PROVIDER_VERSION)
+export TERRAFORM_PROVIDER_VERSION ?= 0.0.26
 export TERRAFORM_DOCS_PATH ?= docs/resources
 
 
@@ -56,6 +57,8 @@ GO_SUBDIRS += cmd internal apis
 
 KIND_VERSION = v0.31.0
 UPTEST_VERSION = v2.2.0
+# crddiff stayed behind at upbound/uptest when uptest itself moved to the
+# crossplane org, and it is versioned separately from UPTEST_VERSION.
 CRDDIFF_VERSION = v0.12.1
 # The stable channel publishes the CLI binary a little behind the Crossplane
 # release itself; this is the newest one available there.
@@ -216,7 +219,7 @@ local-deploy: build controlplane.up local.xpkg.deploy.provider.$(PROJECT_NAME)
 
 e2e: local-deploy uptest
 
-crddiff: $(UPTEST)
+crddiff:
 	@$(INFO) Checking breaking CRD schema changes
 	@for crd in $${MODIFIED_CRD_LIST}; do \
 		if ! git cat-file -e "$${GITHUB_BASE_REF}:$${crd}" 2>/dev/null; then \
@@ -224,7 +227,7 @@ crddiff: $(UPTEST)
 			continue ; \
 		fi ; \
 		echo "Checking $${crd} for breaking API changes..." ; \
-		changes_detected=$$(go run github.com/crossplane/uptest/cmd/crddiff@$(CRDDIFF_VERSION) revision --enable-upjet-extensions <(git cat-file -p "$${GITHUB_BASE_REF}:$${crd}") "$${crd}" 2>&1) ; \
+		changes_detected=$$(go run github.com/upbound/uptest/cmd/crddiff@$(CRDDIFF_VERSION) revision --enable-upjet-extensions <(git cat-file -p "$${GITHUB_BASE_REF}:$${crd}") "$${crd}" 2>&1) ; \
 		if [[ $$? != 0 ]] ; then \
 			printf "\033[31m"; echo "Breaking change detected!"; printf "\033[0m" ; \
 			echo "$${changes_detected}" ; \
@@ -235,13 +238,31 @@ crddiff: $(UPTEST)
 
 schema-version-diff:
 	@$(INFO) Checking for native state schema version changes
-	@export PREV_PROVIDER_VERSION=$$(git cat-file -p "${GITHUB_BASE_REF}:Makefile" | sed -nr 's/^export[[:space:]]*TERRAFORM_PROVIDER_VERSION[[:space:]]*:=[[:space:]]*(.+)/\1/p'); \
+	@export PREV_PROVIDER_VERSION=$$(git cat-file -p "${GITHUB_BASE_REF}:Makefile" | sed -nr 's/^export[[:space:]]*TERRAFORM_PROVIDER_VERSION[[:space:]]*\?=[[:space:]]*(.+)/\1/p'); \
 	echo Detected previous Terraform provider version: $${PREV_PROVIDER_VERSION}; \
 	echo Current Terraform provider version: $${TERRAFORM_PROVIDER_VERSION}; \
 	mkdir -p $(WORK_DIR); \
 	git cat-file -p "$${GITHUB_BASE_REF}:config/schema.json" > "$(WORK_DIR)/schema.json.$${PREV_PROVIDER_VERSION}"; \
 	./scripts/version_diff.py config/generated.lst "$(WORK_DIR)/schema.json.$${PREV_PROVIDER_VERSION}" config/schema.json
 	@$(OK) Checking for native state schema version changes
+
+# Refreshes config/generated.lst from config.GetProvider(). Unlike `make
+# generate` this needs neither the Terraform CLI nor a docs checkout, so the
+# schema-diff-issues automation can regenerate the list from a bare checkout and
+# never mistake a stale file for a missing resource.
+generated-lst:
+	@$(INFO) Writing config/generated.lst
+	@go run ./cmd/generatedlist config/generated.lst
+	@$(OK) Writing config/generated.lst
+
+# Verifies config/generated.lst matches config.GetProvider(). Exits non-zero
+# when the committed file is stale; run generated-lst to fix it.
+generated-lst-check:
+	@$(INFO) Checking config/generated.lst is up to date
+	@go run ./cmd/generatedlist --check config/generated.lst || $(FAIL)
+	@$(OK) Checking config/generated.lst is up to date
+
+.PHONY: generated-lst generated-lst-check
 
 .PHONY: cobertura submodules fallthrough run crds.clean
 

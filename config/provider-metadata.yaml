@@ -370,6 +370,7 @@ resources:
             coderd_organization_group_sync.org_sync_idp_groups: (Set of String) Claims from the IdP provider that will give users access to this organization.
             coderd_organization_group_sync.role_sync: (Block, Optional) Role sync settings to sync organization roles from an IdP. (see below for nested schema)
             coderd_organization_group_sync.workspace_sharing: (String) Workspace sharing setting for the organization. Valid values are everyone and none. Requires a Coder Deployment running v2.32.0 or later.
+            default_org_member_roles: (Set of String) Built-in organization role names that are unioned into every member's effective roles. Changes propagate to members on their next request. Requires a Coder Deployment running v2.37.0 or later.
             description: (String)
             display_name: (String) Display name of the organization. Defaults to name.
             field: (String) The claim field that specifies what groups a user should be in.

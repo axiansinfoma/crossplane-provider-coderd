@@ -1,0 +1,44 @@
+baseURL: https://axiansinfoma.github.io/crossplane-provider-coderd/
+title: Provider Coderd
+locale: en-us
+
+module:
+  imports:
+    - path: github.com/imfing/hextra
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
+  highlight:
+    noClasses: false
+
+outputs:
+  home: [HTML]
+  section: [HTML, markdown]
+  page: [HTML, markdown]
+
+menu:
+  main:
+    - name: Documentation
+      pageRef: /docs
+      weight: 1
+    - name: GitHub
+      url: https://github.com/axiansinfoma/crossplane-provider-coderd
+      weight: 2
+    - name: Releases
+      url: https://github.com/axiansinfoma/crossplane-provider-coderd/releases
+      weight: 3
+
+params:
+  navbar:
+    displayTitle: true
+    displayLogo: false
+  theme:
+    default: system
+    displayToggle: true
+  search:
+    enable: true
+  editURL:
+    enable: true
+    base: https://github.com/axiansinfoma/crossplane-provider-coderd/tree/main/docs/content

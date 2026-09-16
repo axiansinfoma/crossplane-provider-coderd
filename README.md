@@ -7,6 +7,8 @@
 and exposes every resource that provider supports as a Crossplane managed
 resource.
 
+Documentation: <https://axiansinfoma.github.io/crossplane-provider-coderd/>
+
 It requires **Crossplane v2** and serves each managed resource twice: as a
 cluster-scoped type under `*.coderd.crossplane.io` and as a namespaced type
 under `*.coderd.m.crossplane.io`.
@@ -56,15 +58,22 @@ manifest per kind, in both the cluster-scoped and the namespaced flavour.
 
 ## How this provider is generated
 
-The provider runs the coderd Terraform provider under the Terraform CLI. Both
-binaries are baked into the controller image, and the controller drives a
-Terraform workspace per managed resource.
+The coderd Terraform provider is linked into the controller binary through its
+[`fwprovider`](https://github.com/coder/terraform-provider-coderd/tree/main/fwprovider)
+package and driven in-process by Upjet's Terraform plugin framework client.
+There is no Terraform CLI and no provider plugin in the image, and no
+subprocess per reconcile.
 
 Everything under `apis/`, `internal/controller/`, `package/crds/` and
 `examples-generated/` is generated. The inputs are:
 
-- `Makefile` — `TERRAFORM_PROVIDER_VERSION` pins the upstream release.
+- `Makefile` — `TERRAFORM_PROVIDER_VERSION` pins the upstream release the
+  schema and docs are taken from. `go.mod` pins the same release of
+  `github.com/coder/terraform-provider-coderd` as the embedded implementation;
+  the two must move together.
 - `config/schema.json` — the Terraform schema, from `terraform providers schema`.
+  This is the only step that still needs the Terraform CLI, and only at code
+  generation time.
 - `config/provider-metadata.yaml` — scraped from the upstream provider's docs.
 - `config/external_name.go` — how each resource's external name maps to its
   Terraform ID.
