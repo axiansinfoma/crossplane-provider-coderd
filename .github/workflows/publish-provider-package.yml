@@ -20,7 +20,7 @@ jobs:
     uses: crossplane-contrib/provider-workflows/.github/workflows/publish-provider.yml@451c4dc6ad3691b0a702a997a0ac24e8bbc8bbaa # main
     with:
       registry_org: axiansinfoma
-      repository: crossplane-provider-coderd
+      repository: provider-coderd
       version: ${{ github.event.inputs.version }}
       go-version: ${{ github.event.inputs.go-version }}
       cleanup-disk: true
