@@ -6,8 +6,10 @@ package config
 
 import (
 	"context"
+	"strings"
 
 	"github.com/crossplane/upjet/v2/pkg/config"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/pkg/errors"
 )
 
@@ -22,18 +24,18 @@ import (
 // from their own state below.
 var ExternalNameConfigs = map[string]config.ExternalName{
 	// Identified by a Coder-assigned UUID.
-	"coderd_organization":         config.IdentifierFromProvider,
-	"coderd_user":                 config.IdentifierFromProvider,
-	"coderd_group":                config.IdentifierFromProvider,
-	"coderd_template":             config.IdentifierFromProvider,
-	"coderd_workspace_proxy":      config.IdentifierFromProvider,
-	"coderd_ai_provider":          config.IdentifierFromProvider,
-	"coderd_agents_model":         config.IdentifierFromProvider,
-	"coderd_agents_default_model": config.IdentifierFromProvider,
-	"coderd_agents_mcp_server":    config.IdentifierFromProvider,
+	"coderd_organization":         uuidIdentified(),
+	"coderd_user":                 uuidIdentified(),
+	"coderd_group":                uuidIdentified(),
+	"coderd_template":             uuidIdentified(),
+	"coderd_workspace_proxy":      uuidIdentified(),
+	"coderd_ai_provider":          uuidIdentified(),
+	"coderd_agents_model":         uuidIdentified(),
+	"coderd_agents_default_model": uuidIdentified(),
+	"coderd_agents_mcp_server":    uuidIdentified(),
 
 	// Identified by the Coder-assigned numeric license ID.
-	"coderd_license": config.IdentifierFromProvider,
+	"coderd_license": numericIdentified("0"),
 
 	// No "id" attribute: the group sync configuration of an organization is
 	// addressed by that organization's ID, which is also its import ID.
@@ -48,6 +50,68 @@ var ExternalNameConfigs = map[string]config.ExternalName{
 	"coderd_agents_system_prompt":       singletonExternalName("agents_system_prompt"),
 	"coderd_oauth2_provider_settings":   singletonExternalName("oauth2_provider_settings"),
 	"coderd_organization_sync_settings": singletonExternalName("organization_sync_settings"),
+}
+
+// uuidIdentified returns the external name configuration for a resource whose
+// Terraform "id" attribute is a Coder-assigned UUID.
+//
+// upjet's plugin framework Observe calls ReadResource unconditionally, even
+// before the resource has been created, when the external name annotation --
+// and therefore the "id" in the Terraform state -- is still empty. The coderd
+// provider types these ids with a UUID-validating framework type, so the read
+// fails with an error-severity diagnostic instead of returning a null state,
+// and the managed resource never advances to Create. Treating that specific
+// diagnostic as "resource not found" restores the intended flow.
+func uuidIdentified() config.ExternalName {
+	e := config.IdentifierFromProvider
+	e.IsNotFoundDiagnosticFn = isEmptyUUIDDiagnostic
+	return e
+}
+
+// numericIdentified returns the external name configuration for a resource
+// whose Terraform "id" attribute is a Coder-assigned number rather than a
+// string.
+//
+// These resources hit the same pre-create problem as uuidIdentified, but fail
+// earlier and for a different reason. upjet seeds the Terraform state from the
+// managed resource's parameters, and on the first reconcile copyParameters
+// copies params["id"] -- the empty external name -- into that state. Decoding
+// the empty string into a numeric attribute fails while the state is still
+// being constructed ("error parsing number: EOF"), so the read never runs and
+// no diagnostic hook can intercept it. Handing out a sentinel id instead keeps
+// the state decodable; the sentinel matches no real license, so the provider's
+// Read reports the resource as gone and upjet proceeds to Create.
+func numericIdentified(sentinel string) config.ExternalName {
+	e := config.IdentifierFromProvider
+	e.GetIDFn = func(ctx context.Context, externalName string, params, tfstate map[string]any) (string, error) {
+		if externalName == "" {
+			return sentinel, nil
+		}
+		return config.ExternalNameAsID(ctx, externalName, params, tfstate)
+	}
+	return e
+}
+
+// diagSummaryInvalidUUID is the diagnostic summary the coderd provider returns
+// when an attribute typed as a UUID cannot be parsed.
+const diagSummaryInvalidUUID = "Invalid UUID"
+
+// detailEmptyUUID is the parse error a UUID attribute produces when it holds
+// the empty string, i.e. when the resource has not been created yet. We match
+// on the zero length specifically so that a genuinely malformed UUID still
+// surfaces as an error rather than being silently reported as not found.
+const detailEmptyUUID = "invalid UUID length: 0"
+
+func isEmptyUUIDDiagnostic(diags []*tfprotov6.Diagnostic) bool {
+	for _, d := range diags {
+		if d.Severity != tfprotov6.DiagnosticSeverityError {
+			continue
+		}
+		if d.Summary == diagSummaryInvalidUUID && strings.Contains(d.Detail, detailEmptyUUID) {
+			return true
+		}
+	}
+	return false
 }
 
 // attributeAsExternalName returns an external name configuration that reads the
