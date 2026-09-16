@@ -16,7 +16,7 @@ TERRAFORM_VERSION_VALID := $(shell [ "$(TERRAFORM_VERSION)" = "`printf "$(TERRAF
 
 export TERRAFORM_PROVIDER_SOURCE ?= coder/coderd
 export TERRAFORM_PROVIDER_REPO ?= https://github.com/coder/terraform-provider-coderd
-export TERRAFORM_PROVIDER_VERSION ?= 0.0.25
+export TERRAFORM_PROVIDER_VERSION ?= 0.0.26
 export TERRAFORM_DOCS_PATH ?= docs/resources
 
 

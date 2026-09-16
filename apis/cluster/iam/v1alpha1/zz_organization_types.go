@@ -76,6 +76,11 @@ type GroupSyncParameters struct {
 
 type OrganizationInitParameters struct {
 
+	// in organization role names that are unioned into every member's effective roles. Changes propagate to members on their next request. Requires a Coder Deployment running v2.37.0 or later.
+	// Built-in organization role names that are unioned into every member's effective roles. Changes propagate to members on their next request. Requires a Coder Deployment running v2.37.0 or later.
+	// +listType=set
+	DefaultOrgMemberRoles []*string `json:"defaultOrgMemberRoles,omitempty" tf:"default_org_member_roles,omitempty"`
+
 	// (String)
 	Description *string `json:"description,omitempty" tf:"description,omitempty"`
 
@@ -111,6 +116,11 @@ type OrganizationInitParameters struct {
 }
 
 type OrganizationObservation struct {
+
+	// in organization role names that are unioned into every member's effective roles. Changes propagate to members on their next request. Requires a Coder Deployment running v2.37.0 or later.
+	// Built-in organization role names that are unioned into every member's effective roles. Changes propagate to members on their next request. Requires a Coder Deployment running v2.37.0 or later.
+	// +listType=set
+	DefaultOrgMemberRoles []*string `json:"defaultOrgMemberRoles,omitempty" tf:"default_org_member_roles,omitempty"`
 
 	// (String)
 	Description *string `json:"description,omitempty" tf:"description,omitempty"`
@@ -150,6 +160,12 @@ type OrganizationObservation struct {
 }
 
 type OrganizationParameters struct {
+
+	// in organization role names that are unioned into every member's effective roles. Changes propagate to members on their next request. Requires a Coder Deployment running v2.37.0 or later.
+	// Built-in organization role names that are unioned into every member's effective roles. Changes propagate to members on their next request. Requires a Coder Deployment running v2.37.0 or later.
+	// +kubebuilder:validation:Optional
+	// +listType=set
+	DefaultOrgMemberRoles []*string `json:"defaultOrgMemberRoles,omitempty" tf:"default_org_member_roles,omitempty"`
 
 	// (String)
 	// +kubebuilder:validation:Optional
