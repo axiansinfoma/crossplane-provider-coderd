@@ -2,6 +2,27 @@ apiVersion: meta.pkg.crossplane.io/v1
 kind: Provider
 metadata:
   name: provider-coderd
+  annotations:
+    meta.crossplane.io/maintainer: Michael Villani <45660891+michvllni@users.noreply.github.com>
+    meta.crossplane.io/source: github.com/axiansinfoma/crossplane-provider-coderd
+    meta.crossplane.io/license: Apache-2.0
+    meta.crossplane.io/description: |
+      The Coder Crossplane provider enables management of Coder deployments —
+      organizations, users, groups, templates, licenses, workspace proxies and
+      AI agent configuration — in Kubernetes.
+    meta.crossplane.io/readme: |
+      `provider-coderd` is a Crossplane provider for [Coder](https://coder.com),
+      generated with [Upjet](https://github.com/crossplane/upjet) from the
+      [coderd Terraform provider](https://github.com/coder/terraform-provider-coderd).
+
+      It requires Crossplane v2 and serves every managed resource twice: as a
+      cluster-scoped type under `*.coderd.crossplane.io` and as a namespaced type
+      under `*.coderd.m.crossplane.io`.
+
+      If you encounter an issue please open one in the
+      [axiansinfoma/crossplane-provider-coderd](https://github.com/axiansinfoma/crossplane-provider-coderd)
+      repo.
+    friendly-name.meta.crossplane.io: Provider Coder
 spec:
   # This provider serves both cluster-scoped (v1) and namespaced (v2) managed
   # resources, and therefore requires Crossplane v2.
